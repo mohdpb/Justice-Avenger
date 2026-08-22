@@ -1,0 +1,63 @@
+﻿Build started 8/22/2026 2:44:50 PM.
+     1>Project "C:\Users\plabo\OneDrive\Desktop\lab2\Justice Avenger\lab2\lab2.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         D:\Codes\VS\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt iMain.cpp
+         iMain.cpp
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\player.h(67): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\player.h(68): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\player.h(69): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\player.h(70): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\player.h(71): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\enemy.h(111): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\enemy.h(112): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\enemy.h(113): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\enemy.h(114): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\enemy.h(115): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\settingsmanager.h(34): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(211) : see declaration of 'fopen'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\settingsmanager.h(42): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(211) : see declaration of 'fopen'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\savemanager.h(31): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(211) : see declaration of 'fopen'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\savemanager.h(39): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(211) : see declaration of 'fopen'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\savemanager.h(48): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(211) : see declaration of 'fopen'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(26): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(211) : see declaration of 'fopen'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(34): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(211) : see declaration of 'fopen'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(46): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\string.h(195) : see declaration of 'strncpy'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(54): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\string.h(112) : see declaration of 'strcpy'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(55): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\string.h(195) : see declaration of 'strncpy'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\menusystem.h(36): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\string.h(195) : see declaration of 'strncpy'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\imain.cpp(476): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\imain.cpp(477): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\imain.cpp(539): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\imain.cpp(684): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
+       Link:
+         D:\Codes\VS\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\plabo\OneDrive\Desktop\lab2\Justice Avenger\Debug\lab2.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\plabo\OneDrive\Desktop\lab2\Justice Avenger\Debug\lab2.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\plabo\OneDrive\Desktop\lab2\Justice Avenger\Debug\lab2.lib" /MACHINE:X86 Debug\iMain.obj
+         lab2.vcxproj -> C:\Users\plabo\OneDrive\Desktop\lab2\Justice Avenger\Debug\lab2.exe
+     1>Done Building Project "C:\Users\plabo\OneDrive\Desktop\lab2\Justice Avenger\lab2\lab2.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:02.09
