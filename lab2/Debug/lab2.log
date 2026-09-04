@@ -1,4 +1,4 @@
-﻿Build started 8/23/2026 4:42:50 AM.
+﻿Build started 8/23/2026 1:28:35 PM.
      1>Project "C:\Users\plabo\OneDrive\Desktop\lab2\Justice Avenger\lab2\lab2.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
          D:\Codes\VS\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt iMain.cpp
@@ -23,9 +23,9 @@
                  d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
      1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\enemy.h(119): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  d:\codes\vs\vc\include\stdio.h(356) : see declaration of 'sprintf'
-     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\settingsmanager.h(34): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\settingsmanager.h(24): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  d:\codes\vs\vc\include\stdio.h(211) : see declaration of 'fopen'
-     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\settingsmanager.h(42): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\settingsmanager.h(32): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  d:\codes\vs\vc\include\stdio.h(211) : see declaration of 'fopen'
      1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\savemanager.h(21): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  d:\codes\vs\vc\include\stdio.h(211) : see declaration of 'fopen'
@@ -33,15 +33,15 @@
                  d:\codes\vs\vc\include\stdio.h(211) : see declaration of 'fopen'
      1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\savemanager.h(38): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  d:\codes\vs\vc\include\stdio.h(211) : see declaration of 'fopen'
-     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(26): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(19): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  d:\codes\vs\vc\include\stdio.h(211) : see declaration of 'fopen'
-     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(34): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(27): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  d:\codes\vs\vc\include\stdio.h(211) : see declaration of 'fopen'
-     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(46): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(38): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  d:\codes\vs\vc\include\string.h(195) : see declaration of 'strncpy'
-     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(54): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(46): warning C4996: 'strcpy': This function or variable may be unsafe. Consider using strcpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  d:\codes\vs\vc\include\string.h(112) : see declaration of 'strcpy'
-     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(55): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+     1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\highscoremanager.h(47): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  d:\codes\vs\vc\include\string.h(195) : see declaration of 'strncpy'
      1>c:\users\plabo\onedrive\desktop\lab2\justice avenger\lab2\menusystem.h(19): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
                  d:\codes\vs\vc\include\string.h(195) : see declaration of 'strncpy'
@@ -60,4 +60,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:03.42
+Time Elapsed 00:00:03.41
