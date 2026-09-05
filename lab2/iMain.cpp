@@ -36,6 +36,8 @@ unsigned int arenaBgTex = 0;
 unsigned int groundTex = 0;    
 unsigned int heartFullTex = 0;
 unsigned int heartEmptyTex = 0;
+unsigned int storyTex[STORY_SLIDE_COUNT];
+int currentStorySlide = 0;
 
 double cameraX = 0;            
 
@@ -57,6 +59,7 @@ void copyEnemyTextures(Enemy &dst, Enemy &src);
 void spawnEnemiesForDay(int day);
 void beginDay();
 void beginDayTransition();
+void beginStoryIntro();
 void startNewGame();
 void continueGame();
 void onDayCleared();
@@ -81,6 +84,7 @@ void drawAudioSettingsScreen();
 void drawAboutMenuScreen();
 void drawHighScoresScreen();
 void drawNameEntryScreen();
+void drawStoryIntroScreen();
 void drawDayTransitionScreen();
 void drawGameplayScene();
 void drawPlayerHealthBar();
@@ -97,6 +101,7 @@ void handleAudioSettingsClicks();
 void handleAboutMenuClicks();
 void handleHighScoresMenuClicks();
 void handleNameEntryInput();
+void handleStoryIntro();
 void handleDayTransition();
 void handleGameplay();
 void handleDeathPause();
@@ -125,6 +130,13 @@ void loadAllAssets()
     groundTex  = iLoadImage("assets/ground.png");
     heartFullTex  = iLoadImage("assets/hearts/heart_full.png");
     heartEmptyTex = iLoadImage("assets/hearts/heart_empty.png");
+
+    for (int i = 0; i < STORY_SLIDE_COUNT; i++)
+    {
+        char fn[256];
+        sprintf(fn, "assets/story/slide_%d.png", i);
+        storyTex[i] = iLoadImage(fn);
+    }
 }
 
 void copyEnemyTextures(Enemy &dst, Enemy &src)
@@ -200,6 +212,12 @@ void beginDayTransition()
     appState = STATE_DAY_TRANSITION;
 }
 
+void beginStoryIntro()
+{
+    currentStorySlide = 0;
+    appState = STATE_STORY_INTRO;
+}
+
 void startNewGame()
 {
     currentDay = 1;
@@ -207,7 +225,7 @@ void startNewGame()
     saveData.currentDay = currentDay;
     saveData.livesRemaining = livesRemaining;
     writeSave(saveData);
-    beginDayTransition();
+    beginStoryIntro();
 }
 
 void continueGame()
@@ -216,7 +234,7 @@ void continueGame()
     loadSave(saveData);
     currentDay = saveData.currentDay;
     livesRemaining = saveData.livesRemaining;
-    beginDayTransition();
+    beginDayTransition();   
 }
 
 void onDayCleared()
@@ -470,6 +488,30 @@ void drawNameEntryScreen()
     drawCenteredText(WINDOW_W/2, WINDOW_H/2 - 40, "Press ENTER to confirm (Backspace to edit)", GLUT_BITMAP_HELVETICA_18);
 }
 
+// Full-screen slideshow, one image at a time. Falls back to a plain
+// dark screen with a placeholder label + slide number until the actual
+// story images are added to assets/story/ (see loadAllAssets()).
+void drawStoryIntroScreen()
+{
+    unsigned int tex = storyTex[currentStorySlide];
+
+    if (tex != 0)
+    {
+        iShowImage(0, 0, WINDOW_W, WINDOW_H, tex);
+    }
+    else
+    {
+        drawDimOverlay();
+        char label[64];
+        sprintf(label, "Story Slide %d of %d (image coming soon)", currentStorySlide + 1, STORY_SLIDE_COUNT);
+        iSetColor(255, 255, 255);
+        drawCenteredText(WINDOW_W/2, WINDOW_H/2, label, GLUT_BITMAP_HELVETICA_18);
+    }
+
+    iSetColor(255, 255, 255);
+    drawCenteredText(WINDOW_W/2, 30, "Click or press any key to continue", GLUT_BITMAP_HELVETICA_18);
+}
+
 void drawDayTransitionScreen()
 {
     drawDimOverlay();
@@ -714,6 +756,28 @@ void handleNameEntryInput()
     }
 }
 
+// Advances on a mouse click OR any keyboard key - loops every key code
+// checking keyJustPressed() since there's no single "any key" event in
+// iGraphics.
+void handleStoryIntro()
+{
+    bool advance = g_mouseClicked;
+    if (!advance)
+    {
+        for (int k = 0; k < 256; k++)
+        {
+            if (keyJustPressed((unsigned char)k)) { advance = true; break; }
+        }
+    }
+
+    if (advance)
+    {
+        currentStorySlide++;
+        if (currentStorySlide >= STORY_SLIDE_COUNT)
+            beginDayTransition();   // story's over - start Day 1
+    }
+}
+
 void handleDayTransition()
 {
     dayTransitionTimer--;
@@ -860,6 +924,7 @@ void iDraw()
         case STATE_ABOUT_MENU:        drawAboutMenuScreen(); break;
         case STATE_HIGHSCORES_MENU:   drawHighScoresScreen(); break;
         case STATE_NAME_ENTRY:        drawNameEntryScreen(); break;
+        case STATE_STORY_INTRO:       drawStoryIntroScreen(); break;
         case STATE_DAY_TRANSITION:    drawDayTransitionScreen(); break;
         case STATE_PLAYING:           drawGameplayScene(); break;
         case STATE_DEATH_PAUSE:       drawGameplayScene(); break;
@@ -881,6 +946,7 @@ void fixedUpdate()
         case STATE_ABOUT_MENU:        handleAboutMenuClicks(); break;
         case STATE_HIGHSCORES_MENU:   handleHighScoresMenuClicks(); break;
         case STATE_NAME_ENTRY:        handleNameEntryInput(); break;
+        case STATE_STORY_INTRO:       handleStoryIntro(); break;
         case STATE_DAY_TRANSITION:    handleDayTransition(); break;
         case STATE_PLAYING:           handleGameplay(); break;
         case STATE_DEATH_PAUSE:       handleDeathPause(); break;
