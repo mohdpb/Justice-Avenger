@@ -1,3 +1,4 @@
+
 #include "iGraphics.h"
 #include "GameCommon.h"
 #include "Player.h"
@@ -15,6 +16,7 @@
 #include <time.h>
 
 #define MAX_ENEMIES 16
+
 
 AppState appState = STATE_MAIN_MENU;
 
@@ -42,13 +44,14 @@ int livesRemaining = TOTAL_LIVES;
 int dayTransitionTimer = 0;
 int deathPauseTimer = 0;
 int dayClearPauseTimer = 0;
-bool pendingGameOver = false;   
+bool pendingGameOver = false;  
 
 char nameEntryBuffer[MAX_NAME_LEN];
 int nameEntryLen = 0;
 
 bool deathHandled = false;
 bool dayClearHandled = false;
+
 
 void copyEnemyTextures(Enemy &dst, Enemy &src);
 void spawnEnemiesForDay(int day);
@@ -106,10 +109,14 @@ void loadAllAssets()
 {
     loadPlayerAssets(player);
 
-    resetEnemy(enemyTemplates[0], ENEMY_SMALL, 0, 0, 0);  loadEnemyAssets(enemyTemplates[0]);
-    resetEnemy(enemyTemplates[1], ENEMY_MEDIUM, 0, 0, 0); loadEnemyAssets(enemyTemplates[1]);
-    resetEnemy(enemyTemplates[2], ENEMY_LARGE, 0, 0, 0);  loadEnemyAssets(enemyTemplates[2]);
+	resetEnemy(enemyTemplates[0], ENEMY_SMALL, 0, 0, 0, 1);
+	loadEnemyAssets(enemyTemplates[0]);
 
+	resetEnemy(enemyTemplates[1], ENEMY_MEDIUM, 0, 0, 0, 1);
+	loadEnemyAssets(enemyTemplates[1]);
+
+	resetEnemy(enemyTemplates[2], ENEMY_LARGE, 0, 0, 0, 1);
+	loadEnemyAssets(enemyTemplates[2]); 
     loadPowerUpAssets(powerUp);
 
     bgTex      = iLoadImage("assets/menu_background.png");
@@ -129,6 +136,7 @@ void copyEnemyTextures(Enemy &dst, Enemy &src)
     memcpy(dst.deadTex,   src.deadTex,   sizeof(dst.deadTex));
 }
 
+
 void spawnEnemiesForDay(int day)
 {
     enemyCount = 0;
@@ -136,28 +144,34 @@ void spawnEnemiesForDay(int day)
     double spacing = 140;
     double startX = 500;
 
-    for (int i = 0; i < wave.smallCount && enemyCount < MAX_ENEMIES; i++)
-    {
-        double x = startX + enemyCount * spacing;
-        resetEnemy(enemies[enemyCount], ENEMY_SMALL, x, x - 70, x + 70);
-        copyEnemyTextures(enemies[enemyCount], enemyTemplates[0]);
-        enemyCount++;
-    }
+	for (int i = 0; i < wave.smallCount && enemyCount < MAX_ENEMIES; i++)
+	{
+		double x = startX + enemyCount * spacing;
+		resetEnemy(enemies[enemyCount], ENEMY_SMALL, x, x - 70, x + 70, day);
+		copyEnemyTextures(enemies[enemyCount], enemyTemplates[0]);
+		enemyCount++;
+	}
     for (int i = 0; i < wave.mediumCount && enemyCount < MAX_ENEMIES; i++)
     {
         double x = startX + enemyCount * spacing;
-        resetEnemy(enemies[enemyCount], ENEMY_MEDIUM, x, x - 70, x + 70);
+		resetEnemy(enemies[enemyCount], ENEMY_MEDIUM, x, x - 70, x + 70, day);
         copyEnemyTextures(enemies[enemyCount], enemyTemplates[1]);
         enemyCount++;
     }
-    for (int i = 0; i < wave.largeCount && enemyCount < MAX_ENEMIES; i++)
-    {
-        double x = startX + enemyCount * spacing;
-        resetEnemy(enemies[enemyCount], ENEMY_LARGE, x, x - 70, x + 70);
-        copyEnemyTextures(enemies[enemyCount], enemyTemplates[2]);
-        enemyCount++;
-    }
+	for (int i = 0; i < wave.largeCount && enemyCount < MAX_ENEMIES; i++)
+	{
+		double x = startX + enemyCount * spacing;
+		resetEnemy(enemies[enemyCount], ENEMY_LARGE, x, x - 70, x + 70, day);
+		copyEnemyTextures(enemies[enemyCount], enemyTemplates[2]);
+
+		if (day >= 5 && i == wave.largeCount - 1)
+			makeBoss(enemies[enemyCount]);
+
+		enemyCount++;
+	}
+
 }
+
 
 void updateCamera()
 {
@@ -166,6 +180,7 @@ void updateCamera()
     if (target > WORLD_W - WINDOW_W) target = WORLD_W - WINDOW_W;
     cameraX = target;
 }
+
 
 void beginDay()
 {
@@ -222,6 +237,7 @@ void onDayCleared()
     }
 }
 
+
 void triggerPlayerDeathSequence()
 {
     livesRemaining--;
@@ -247,29 +263,33 @@ void triggerDayClearSequence()
     appState = STATE_DAY_CLEAR_PAUSE;
 }
 
+
 void resolvePlayerAttack()
 {
-    HitBox pBox = getPlayerBox(player);
-    for (int i = 0; i < enemyCount; i++)
-    {
-        if (!enemies[i].alive || enemies[i].state == DEAD) continue;
-        HitBox eBox = getEnemyBox(enemies[i]);
-        if (aabbOverlap(pBox, eBox))
-        {
-            applyDamageToEnemy(enemies[i], getPlayerAttackDamage(player));
-            break;
-        }
-    }
+	HitBox pBox = getPlayerAttackBox(player);
+	for (int i = 0; i < enemyCount; i++)
+	{
+		if (!enemies[i].alive || enemies[i].state == DEAD) continue;
+		HitBox eBox = getEnemyBox(enemies[i]);
+		if (aabbOverlap(pBox, eBox))
+		{
+			applyDamageToEnemy(enemies[i], getPlayerAttackDamage(player), player.facing);
+			break;
+		}
+	}
 }
 
 void resolveEnemyAttack(Enemy &e)
 {
-    if (player.state == DEAD) return;
-    HitBox eBox = getEnemyBox(e);
-    HitBox pBox = getPlayerBox(player);
-    if (aabbOverlap(eBox, pBox))
-        applyDamageToPlayer(player, e.stats.attackDamage);
+	if (player.state == DEAD) return;
+	HitBox eBox = getEnemyBox(e);
+	HitBox pBox = getPlayerBox(player);
+	if (aabbOverlap(eBox, pBox))
+		applyDamageToPlayer(player, e.stats.attackDamage, e.facing);
 }
+
+
+
 
 int buildMainMenuButtons(Button out[6])
 {
@@ -506,6 +526,7 @@ void drawGameCompleteScreen()
         drawButton(btns[i], isPointInButton(btns[i], iMouseX, iMouseY));
 }
 
+
 void drawPlayerHealthBar()
 {
     double x = 30, y = WINDOW_H - 90, barW = 250, barH = 22;
@@ -524,6 +545,7 @@ void drawPlayerHealthBar()
     iRectangle(x, y, barW, barH);
     iText(x, y + barH + 4, (char*)"PROTECTOR");
 }
+
 
 void drawHeartsUI()
 {
@@ -549,6 +571,7 @@ void drawHeartsUI()
         }
     }
 }
+
 
 void drawScrollingWorldBackground()
 {
@@ -596,6 +619,7 @@ void drawGameplayScene()
     iText(20, WINDOW_H - 120, hud);
     iText(20, WINDOW_H - 140, (char*)"A/D move  W jump  J attack  ESC pause");
 }
+
 
 void handleMainMenuClicks()
 {
@@ -822,6 +846,7 @@ void handleGameCompleteInput()
     if (triggered) appState = STATE_MAIN_MENU;
 }
 
+
 void iDraw()
 {
     iClear();
@@ -882,12 +907,14 @@ void iMouse(int button, int state, int mx, int my)
     }
 }
 
+
 void main()
 {
     srand((unsigned int)time(0));
 
     iInitialize(WINDOW_W, WINDOW_H, "Justice Avenger - Protector vs Destroyer");
-
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     loadAllAssets();
     loadSettings(settings);
     loadHighScores(highScores);

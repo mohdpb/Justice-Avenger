@@ -11,13 +11,15 @@ enum NpcMode { NPC_PATROL, NPC_CHASE, NPC_ATTACK_MODE };
 
 struct EnemyStats
 {
-    double scale;
-    int    maxHealth;
-    double moveSpeed;
-    int    attackCooldown;
-    int    attackDamage;
-    int    detectRange;
-    int    attackRange;
+	double scale;
+	int    maxHealth;
+	double moveSpeed;
+	int    attackCooldown;
+	int    attackDamage;
+	int    detectRange;
+	int    attackRange;
+	bool   canJump;
+	double jumpSpeed;
 };
 
 inline EnemyStats getEnemyStats(EnemyType type, int day)
@@ -25,47 +27,55 @@ inline EnemyStats getEnemyStats(EnemyType type, int day)
 	EnemyStats s;
 
 	
-	double difficulty = 1.0;
-
-	if (day == 2)
-		difficulty = 1.5;
-	else if (day >= 3)
-		difficulty = 2.0;
-
+	double difficulty;
+	switch (day)
+	{
+	case 1:  difficulty = 1.0; break;
+	case 2:  difficulty = 1.15; break;
+	case 3:  difficulty = 1.3; break;
+	case 4:  difficulty = 1.5; break;
+	default: difficulty = 1.8; break;
+	}
 	switch (type)
 	{
 	case ENEMY_SMALL:
 		s.scale = 2.0;
 		s.maxHealth = (int)(60 * difficulty);
-		s.moveSpeed = 3.0;
-		s.attackCooldown = 40;
+		s.moveSpeed = 3.0 + 0.15 * (day - 1);
+		s.attackCooldown = 40 - 2 * (day - 1);
+		if (s.attackCooldown < 20) s.attackCooldown = 20;
 		s.attackDamage = (int)(4 * difficulty);
-		s.detectRange = 260;
+		s.detectRange = 260 + 10 * (day - 1);
 		s.attackRange = 70;
 		break;
 
 	case ENEMY_MEDIUM:
 		s.scale = 3.0;
 		s.maxHealth = (int)(100 * difficulty);
-		s.moveSpeed = 2.2;
-		s.attackCooldown = 55;
+		s.moveSpeed = 2.2 + 0.1 * (day - 1);
+		s.attackCooldown = 55 - 2 * (day - 1);
+		if (s.attackCooldown < 30) s.attackCooldown = 30;
 		s.attackDamage = (int)(7 * difficulty);
-		s.detectRange = 280;
+		s.detectRange = 280 + 10 * (day - 1);
 		s.attackRange = 85;
 		break;
 
 	case ENEMY_LARGE:
 		s.scale = 4.0;
 		s.maxHealth = (int)(150 * difficulty);
-		s.moveSpeed = 1.5;
-		s.attackCooldown = 75;
+		s.moveSpeed = 1.5 + 0.07 * (day - 1);
+		s.attackCooldown = 75 - 2 * (day - 1);
+		if (s.attackCooldown < 45) s.attackCooldown = 45;
 		s.attackDamage = (int)(12 * difficulty);
-		s.detectRange = 300;
+		s.detectRange = 300 + 10 * (day - 1);
 		s.attackRange = 100;
 		break;
 	}
+	s.canJump = (day >= 4 && type != ENEMY_LARGE);  
+	s.jumpSpeed = 9.5;
 
 	return s;
+	
 }
 
 
@@ -96,10 +106,15 @@ struct Enemy
     int attackCooldown;
     bool attackLanded;
 
-    NpcMode mode;
-    int patrolDir;
-    double patrolLeftBound, patrolRightBound;
+	NpcMode mode;
+	int patrolDir;
+	double patrolLeftBound, patrolRightBound;
+	int jumpTimer;
 
+	bool isBoss;
+	bool charging;
+	int chargeTimer;
+	int chargeCooldownTimer;
     unsigned int idleTex[ANIM_IDLE_COUNT];
     unsigned int walkTex[ANIM_WALK_COUNT];
     unsigned int attackTex[ANIM_ATTACK_COUNT];
@@ -127,8 +142,20 @@ inline void resetEnemy(Enemy &e, EnemyType type, double startX, double patrolLef
     e.health = e.stats.maxHealth; e.alive = true; e.state = IDLE;
     e.frameIndex = 0; e.frameTimer = 0; e.hurtTimer = 0;
     e.attackCooldown = 0; e.attackLanded = false;
-    e.mode = NPC_PATROL; e.patrolDir = 1;
-    e.patrolLeftBound = patrolLeft; e.patrolRightBound = patrolRight;
+	e.mode = NPC_PATROL; e.patrolDir = 1;
+	e.patrolLeftBound = patrolLeft; e.patrolRightBound = patrolRight;
+	e.jumpTimer = 0;
+	e.isBoss = false; e.charging = false;
+	e.chargeTimer = 0; e.chargeCooldownTimer = 0;
+}
+
+
+inline void makeBoss(Enemy &e)
+{
+	e.isBoss = true;
+	e.stats.maxHealth = (int)(e.stats.maxHealth * 1.6);
+	e.health = e.stats.maxHealth;
+	e.stats.attackDamage = (int)(e.stats.attackDamage * 1.3);
 }
 
 inline void setEnemyState(Enemy &e, FighterState newState)
@@ -161,11 +188,11 @@ inline HitBox getEnemyBox(Enemy &e)
     return box;
 }
 
-inline void applyDamageToEnemy(Enemy &e, int amount)
+inline void applyDamageToEnemy(Enemy &e, int amount, int knockDir)
 {
-    e.health -= amount;
-    if (e.health <= 0) { e.health = 0; setEnemyState(e, DEAD); }
-    else { setEnemyState(e, HURT); e.hurtTimer = HURT_DURATION; }
+	e.health -= amount;
+	if (e.health <= 0) { e.health = 0; setEnemyState(e, DEAD); }
+	else { setEnemyState(e, HURT); e.hurtTimer = HURT_DURATION; e.x += knockDir * 25; }
 }
 
 inline bool updateEnemy(Enemy &e, double playerX)
@@ -174,7 +201,10 @@ inline bool updateEnemy(Enemy &e, double playerX)
     if (!e.alive) return false;
 
     if (e.attackCooldown > 0) e.attackCooldown--;
-
+	
+	if (e.chargeTimer > 0) e.chargeTimer--;
+	if (e.chargeCooldownTimer > 0) e.chargeCooldownTimer--;
+	if (e.jumpTimer > 0) e.jumpTimer--;
     if (e.state == DEAD)
     {
         advanceEnemyAnim(e, ANIM_DEAD_COUNT);
@@ -220,12 +250,40 @@ inline bool updateEnemy(Enemy &e, double playerX)
             e.attackLanded = false;
             e.facing = (playerX < e.x) ? -1 : 1;
         }
-        else if (e.mode == NPC_CHASE)
-        {
-            if (playerX < e.x) { e.x -= e.stats.moveSpeed; e.facing = -1; }
-            else                { e.x += e.stats.moveSpeed; e.facing = 1; }
-            moving = true;
-        }
+		
+		else if (e.mode == NPC_CHASE)
+		{
+			double speed = e.stats.moveSpeed;
+
+			if (e.isBoss)
+			{
+				if (!e.charging && e.chargeCooldownTimer <= 0)
+				{
+					e.charging = true;
+					e.chargeTimer = 45;
+				}
+				if (e.charging)
+				{
+					speed = e.stats.moveSpeed * 3.0;
+					if (e.chargeTimer <= 0)
+					{
+						e.charging = false;
+						e.chargeCooldownTimer = 180;
+					}
+				}
+			}
+
+			if (playerX < e.x) { e.x -= speed; e.facing = -1; }
+			else                { e.x += speed; e.facing = 1; }
+			moving = true;
+
+			if (e.stats.canJump && e.y <= GROUND_Y && e.jumpTimer <= 0)
+			{
+				e.vy = e.stats.jumpSpeed;
+				e.x += (e.facing == 1 ? 40 : -40);
+				e.jumpTimer = 100;
+			}
+		}
         else
         {
             e.x += e.stats.moveSpeed * 0.4 * e.patrolDir;
@@ -254,10 +312,9 @@ inline bool updateEnemy(Enemy &e, double playerX)
 
 inline void drawEnemy(Enemy &e, double cameraX)
 {
-    if (!e.alive) return;
-
-    unsigned int *texArr = NULL;
-    int count = 0;
+	unsigned int *texArr = NULL;
+	int count = 0;
+	
 
     switch (e.state)
     {
@@ -293,24 +350,28 @@ inline void drawEnemy(Enemy &e, double cameraX)
     }
     else
     {
-        if (e.type == ENEMY_SMALL)       iSetColor(220, 120, 60);
-        else if (e.type == ENEMY_MEDIUM) iSetColor(200, 60, 60);
-        else                              iSetColor(140, 20, 20);
+		if (e.isBoss)                     iSetColor(e.charging ? 255 : 90, 0, e.charging ? 0 : 0);
+		else if (e.type == ENEMY_SMALL)   iSetColor(220, 120, 60);
+		else if (e.type == ENEMY_MEDIUM)  iSetColor(200, 60, 60);
+		else                               iSetColor(140, 20, 20);                             
         iFilledRectangle(screenX - w / 2, e.y, w, h);
     }
 
-    double barW = w;
-    double barX = screenX - barW / 2;
-    double barY = e.y + h + 6;
-    double pct = (double)e.health / (double)e.stats.maxHealth;
-    if (pct < 0) pct = 0;
+	if (e.alive)
+	{
+		double barW = w;
+		double barX = screenX - barW / 2;
+		double barY = e.y + h + 6;
+		double pct = (double)e.health / (double)e.stats.maxHealth;
+		if (pct < 0) pct = 0;
 
-    iSetColor(40, 40, 40);
-    iFilledRectangle(barX, barY, barW, 8);
-    iSetColor(230, 60, 60);
-    iFilledRectangle(barX, barY, barW * pct, 8);
-    iSetColor(255, 255, 255);
-    iRectangle(barX, barY, barW, 8);
+		iSetColor(40, 40, 40);
+		iFilledRectangle(barX, barY, barW, 8);
+		iSetColor(230, 60, 60);
+		iFilledRectangle(barX, barY, barW * pct, 8);
+		iSetColor(255, 255, 255);
+		iRectangle(barX, barY, barW, 8);
+	}
 }
 
-#endif // ENEMY_H
+#endif 

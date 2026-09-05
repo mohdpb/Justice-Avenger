@@ -1,3 +1,4 @@
+
 #ifndef PLAYER_H
 #define PLAYER_H
 
@@ -5,19 +6,18 @@
 #include <stdio.h>
 
 #define PLAYER_SCALE  2.0
-#define PLAYER_WIDTH  (BASE_UNIT_W * PLAYER_SCALE)   
-#define PLAYER_HEIGHT (BASE_UNIT_H * PLAYER_SCALE)   
+#define PLAYER_WIDTH  (BASE_UNIT_W * PLAYER_SCALE)   // 90
+#define PLAYER_HEIGHT (BASE_UNIT_H * PLAYER_SCALE)   // 130
 
 #define PLAYER_MOVE_SPEED      4.0
 #define PLAYER_JUMP_SPEED      11.0
-#define PLAYER_MAX_HEALTH      160
-#define PLAYER_BASE_DAMAGE     15
-#define PLAYER_ATTACK_COOLDOWN 11
-
+#define PLAYER_MAX_HEALTH      200
+#define PLAYER_ATTACK_COOLDOWN 18
+#define PLAYER_BASE_DAMAGE     30
 struct Player
 {
     double x, y, vy;
-    int facing;                
+    int facing;              
     int health;
     FighterState state;
 
@@ -82,6 +82,24 @@ inline HitBox getPlayerBox(Player &p)
     box.y = p.y;
     return box;
 }
+inline HitBox getPlayerAttackBox(Player &p)
+{
+	double reach = 55;
+	double w = PLAYER_WIDTH * 0.5 + reach;
+	double h = PLAYER_HEIGHT * 0.7;
+
+	HitBox box;
+	box.w = w;
+	box.h = h;
+	box.y = p.y + PLAYER_HEIGHT * 0.1;
+
+	if (p.facing == 1)
+		box.x = p.x;
+	else
+		box.x = p.x - w;
+
+	return box;
+}
 
 inline int getPlayerAttackDamage(Player &p)
 {
@@ -106,11 +124,11 @@ inline void setPlayerHurt(Player &p)
     p.hurtTimer = HURT_DURATION;
 }
 
-inline void applyDamageToPlayer(Player &p, int amount)
+inline void applyDamageToPlayer(Player &p, int amount, int knockDir)
 {
-    p.health -= amount;
-    if (p.health <= 0) { p.health = 0; setPlayerState(p, DEAD); }
-    else setPlayerHurt(p);
+	p.health -= amount;
+	if (p.health <= 0) { p.health = 0; setPlayerState(p, DEAD); }
+	else { setPlayerHurt(p); p.x += knockDir * 20; }
 }
 
 inline bool updatePlayer(Player &p)
@@ -220,4 +238,4 @@ inline void drawPlayer(Player &p, double cameraX)
     }
 }
 
-#endif 
+#endif H
