@@ -14,6 +14,7 @@ enum AppState
     STATE_AUDIO_SETTINGS,
     STATE_ABOUT_MENU,
     STATE_HIGHSCORES_MENU,
+    STATE_STORY_INTRO,        
     STATE_NAME_ENTRY,         
     STATE_DAY_TRANSITION,     
     STATE_PLAYING,
@@ -56,6 +57,9 @@ enum AppState
 
 #define DEATH_PAUSE_TICKS     (TICKS_PER_SECOND * 3 / 2)  
 #define DAY_CLEAR_PAUSE_TICKS (TICKS_PER_SECOND * 6 / 5)  
+
+
+#define STORY_SLIDE_COUNT 4
 
 
 struct HitBox
