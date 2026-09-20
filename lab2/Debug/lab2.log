@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ﻿Build started 9/20/2026 5:35:17 PM.
      1>Project "C:\Users\LENOVO\Downloads\gitHub\Justice-Avenger\lab2\lab2.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
@@ -73,3 +74,14 @@
 Build succeeded.
 
 Time Elapsed 00:00:01.52
+=======
+﻿Build started 06/09/2026 00:29:05.
+     1>Project "C:\Users\Administrator\Documents\GitHub\Justice-Avenger\lab2\lab2.vcxproj" on node 2 (Build target(s)).
+     1>Link:
+         lab2.vcxproj -> C:\Users\Administrator\Documents\GitHub\Justice-Avenger\Debug\lab2.exe
+     1>Done Building Project "C:\Users\Administrator\Documents\GitHub\Justice-Avenger\lab2\lab2.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.50
+>>>>>>> d6e73aacb46467ef7b6312e09d4e15e41b7cf43d
