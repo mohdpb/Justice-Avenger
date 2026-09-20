@@ -1,8 +1,7 @@
 #ifndef ENEMY_ABILITIES_H
 #define ENEMY_ABILITIES_H
 
-// Behaviour layer for the day 6-10 enemy types.
-// Include from main.cpp only, after Enemy.h and Projectile.h.
+
 
 #include "iGraphics.h"
 #include "GameCommon.h"
@@ -17,7 +16,7 @@
 #define FIRE_COOLDOWN         120
 #define BOMBER_RANGE          430.0
 #define BOMBER_COOLDOWN       150
-#define RANGED_MIN_GAP        150.0   // ranged types back off inside this
+#define RANGED_MIN_GAP        150.0   
 #define FLYER_HOVER_AMP       25.0
 #define FLYER_HOVER_SPEED     0.045
 #define FLYER_BASE_HEIGHT     55.0
@@ -29,7 +28,7 @@
 void copyEnemyTextures(Enemy &dst, Enemy &src);
 extern Enemy enemyTemplates[];
 
-// projectiles leave the sprite at roughly chest height
+
 inline double enemyMuzzleY(Enemy &e) { return e.y + enemyHeight(e) * 0.55; }
 
 inline bool isRangedEnemy(Enemy &e)
@@ -38,32 +37,32 @@ inline bool isRangedEnemy(Enemy &e)
 		e.type == ENEMY_BOMBER || e.type == ENEMY_SUMMONER;
 }
 
-// call right after resetEnemy() for every enemy
+
 inline void initEnemyAbilities(Enemy &e, int day)
 {
-	e.flyPhase = (double)(rand() % 628) / 100.0;   // desync hovering
+	e.flyPhase = (double)(rand() % 628) / 100.0;   
 	e.shieldHP = 0;
 	e.shieldMax = 0;
-	e.rangedCooldown = 30 + rand() % 60;           // desync first shot
+	e.rangedCooldown = 30 + rand() % 60;           
 	e.summonCooldown = BOSS_SUMMON_COOLDOWN / 2;
 	e.summonsLeft = BOSS_MAX_SUMMONS;
 
 	if (e.type == ENEMY_SHIELD)
 	{
 		e.shieldHP = SHIELD_HP_BASE + day * 6;
-		e.shieldMax = e.shieldHP;      // keeps the shield bar / cracks in step with the real shield HP
+		e.shieldMax = e.shieldHP;      
 	}
 
 	if (e.type == ENEMY_FLYER)
 		e.y = GROUND_Y + FLYER_BASE_HEIGHT;
 }
 
-// Overrides e.y AFTER updateEnemy() has applied gravity, so flyers ignore it.
+
 inline void updateFlyer(Enemy &e)
 {
 	if (e.type != ENEMY_FLYER || !e.alive) return;
 
-	if (e.state == DEAD)                 // shot down: drop to the floor
+	if (e.state == DEAD)                 
 	{
 		e.y -= 4.0;
 		if (e.y < GROUND_Y) e.y = GROUND_Y;
@@ -75,7 +74,7 @@ inline void updateFlyer(Enemy &e)
 	e.y = GROUND_Y + FLYER_BASE_HEIGHT + sin(e.flyPhase) * FLYER_HOVER_AMP;
 }
 
-// ranged types shuffle backwards instead of walking into melee range
+
 inline void keepRangedDistance(Enemy &e, double playerX)
 {
 	if (!isRangedEnemy(e) || e.type == ENEMY_SUMMONER) return;
@@ -91,9 +90,7 @@ inline void keepRangedDistance(Enemy &e, double playerX)
 	}
 }
 
-// fires projectiles; returns true on the tick a shot goes out
-// (the bomber is NOT handled here: it throws its bomb from its attack
-//  animation, see updateEnemy() in Enemy.h)
+
 inline bool updateEnemyRanged(Enemy &e, double playerX)
 {
 	if (!e.alive || e.state == DEAD || e.state == HURT) return false;
@@ -123,7 +120,7 @@ inline bool updateEnemyRanged(Enemy &e, double playerX)
 		e.rangedCooldown = FIRE_COOLDOWN;
 		return true;
 	}
-	if (e.type == ENEMY_SUMMONER)          // boss volley
+	if (e.type == ENEMY_SUMMONER)          
 	{
 		if (dist > 620) return false;
 		e.facing = face;
@@ -159,7 +156,7 @@ inline void updateBossSummon(Enemy &boss, Enemy list[], int &count, int maxCount
 	boss.summonCooldown = BOSS_SUMMON_COOLDOWN;
 }
 
-// One call per enemy per tick, made from handleGameplay() AFTER updateEnemy().
+
 inline void updateEnemyAbilities(Enemy &e, double playerX, Enemy list[], int &count, int maxCount, int day)
 {
 	updateFlyer(e);
@@ -167,7 +164,7 @@ inline void updateEnemyAbilities(Enemy &e, double playerX, Enemy list[], int &co
 
 	if (updateEnemyRanged(e, playerX))
 	{
-		// play the attack animation for the shot, but with no melee hit
+		
 		if (e.state == IDLE || e.state == WALK)
 		{
 			e.state = ATTACK;

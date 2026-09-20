@@ -1,20 +1,9 @@
 #ifndef PROJECTILE_H
 #define PROJECTILE_H
 
-// ---------------------------------------------------------------------------
-// Projectile.h  -  arrows, fireballs and lobbed bombs
-//
-// Header-only. Include it ONCE (from main.cpp, after GameCommon.h).
-// It defines globals, so do not include it from two different .cpp files.
-//
-// Bomb pictures : assets/enemy_large/bom_02.png ... bom_06.png
-// Explosion     : assets/enemy_large/exploision_01.png
-//
-// BOMB_USE_PICTURES 0 = bombs and explosions are drawn with code (always visible)
-#define FIREBALL_USE_PICTURES  0   // 0 = draw fireballs with code, 1 = use fireball.png
-// BOMB_USE_PICTURES 1 = use the bom_XX.png / exploision_01.png pictures
-//                       (each picture must be under 1024 px wide and tall)
-// ---------------------------------------------------------------------------
+
+#define FIREBALL_USE_PICTURES  0   
+
 
 #include "iGraphics.h"
 #include "GameCommon.h"
@@ -25,7 +14,7 @@
 #define BOMB_USE_PICTURES   0
 
 #define MAX_PROJECTILES     64
-#define PROJ_GRAVITY        0.55    // bombs only
+#define PROJ_GRAVITY        0.55    
 #define BOMB_FUSE_TICKS     70
 #define BLAST_TICKS         26
 #define BLAST_RADIUS        70.0
@@ -35,18 +24,18 @@ enum ProjKind { PROJ_ARROW, PROJ_FIREBALL, PROJ_BOMB };
 struct Projectile
 {
 	bool   active;
-	bool   fromEnemy;       // true = damages player, false = damages enemies
+	bool   fromEnemy;       
 	bool   exploding;
-	bool   hasHit;          // one-hit-per-projectile guard
+	bool   hasHit;          
 	ProjKind kind;
 
-	double x, y;            // world coords, y measured from the bottom of the world
+	double x, y;           
 	double vx, vy;
 	double w, h;
-	int    facing;          // +1 right, -1 left
+	int    facing;          
 	int    damage;
-	int    life;            // ticks before it dies on its own
-	int    fuse;            // bombs
+	int    life;           
+	int    fuse;           
 	int    explodeTimer;
 	int    animTimer;
 	int    animFrame;
@@ -56,10 +45,10 @@ Projectile projectiles[MAX_PROJECTILES];
 
 unsigned int arrowTex = 0;
 unsigned int fireballTex = 0;
-unsigned int bombTex[5] = { 0, 0, 0, 0, 0 };   // 5 bomb frames (flickering fuse)
+unsigned int bombTex[5] = { 0, 0, 0, 0, 0 };  
 unsigned int blastTex = 0;
 
-// ---------------------------------------------------------------------------
+
 
 inline void loadProjectileAssets()
 {
@@ -88,7 +77,7 @@ inline Projectile* getFreeProjectile()
 {
 	for (int i = 0; i < MAX_PROJECTILES; i++)
 	if (!projectiles[i].active) return &projectiles[i];
-	return 0;   // pool full - drop the shot
+	return 0;   
 }
 
 inline void initProjectile(Projectile &p, ProjKind kind, double x, double y,
@@ -134,8 +123,8 @@ inline void spawnFireball(double x, double y, int facing, int damage, bool fromE
 	p->life = 240;
 }
 
-// Lobbed arc. targetDist is how far away the player is, so the bomb
-// roughly lands on them instead of always going the same distance.
+
+
 inline void spawnBomb(double x, double y, int facing, int damage,
 	double targetDist, bool fromEnemy = true)
 {
@@ -149,7 +138,7 @@ inline void spawnBomb(double x, double y, int facing, int damage,
 
 	double flightTicks = 55.0;
 	p->vx = (targetDist / flightTicks) * p->facing;
-	p->vy = 0.5 * PROJ_GRAVITY * flightTicks;   // comes back down after ~flightTicks
+	p->vy = 0.5 * PROJ_GRAVITY * flightTicks;   
 	p->life = 400;
 }
 
@@ -183,11 +172,11 @@ inline void updateProjectiles()
 		{
 			p.vy -= PROJ_GRAVITY;
 
-			// flicker the fuse
+		
 			p.animTimer++;
 			if (p.animTimer >= 4) { p.animTimer = 0; p.animFrame = (p.animFrame + 1) % 5; }
 
-			if (p.y <= GROUND_Y)          // hit the floor - skid, keep the fuse burning
+			if (p.y <= GROUND_Y)          
 			{
 				p.y = GROUND_Y;
 				p.vy = 0;
@@ -212,7 +201,7 @@ inline void updateProjectiles()
 	}
 }
 
-// NOTE: this assumes HitBox is { double x, y, w, h; }.
+
 inline HitBox getProjectileBox(Projectile &p)
 {
 	HitBox b;
@@ -233,14 +222,14 @@ inline void drawProjectiles(double cameraX)
 		double sx = p.x - cameraX;
 		if (sx < -250 || sx > WINDOW_W + 250) continue;
 
-		// ---- explosion ----
+	
 		if (p.exploding)
 		{
 			double r = BLAST_RADIUS * (1.0 - (double)p.explodeTimer / BLAST_TICKS) + 20;
 			if (BOMB_USE_PICTURES && blastTex != 0)
 			{
 				double bh = r * 2.0;
-				double bw = bh * (281.0 / 196.0);      // keeps the explosion picture's proportions
+				double bw = bh * (281.0 / 196.0);     
 				iShowImage(sx - bw / 2, p.y - bh * 0.15, (int)bw, (int)bh, blastTex);
 			}
 			else
@@ -255,7 +244,7 @@ inline void drawProjectiles(double cameraX)
 			continue;
 		}
 
-		// ---- bomb drawn with code ----
+		
 		if (p.kind == PROJ_BOMB && !(BOMB_USE_PICTURES && bombTex[p.animFrame % 5] != 0))
 		{
 			double cx = sx, cy = p.y + p.h / 2, r = p.w / 2;
@@ -269,13 +258,13 @@ inline void drawProjectiles(double cameraX)
 			iFilledCircle(cx + r * 0.9, cy + r * 1.3, 4);
 			continue;
 		}
-		// ---- fireball drawn with code ----
+		
 		if (p.kind == PROJ_FIREBALL && !(FIREBALL_USE_PICTURES && fireballTex != 0))
 		{
 			double cx = sx, cy = p.y + p.h / 2, r = p.w / 2;
-			double flick = (p.animFrame % 2 == 0) ? 2.0 : 0.0;   // small flicker
+			double flick = (p.animFrame % 2 == 0) ? 2.0 : 0.0;   
 
-			iSetColor(255, 120, 30);                              // tail behind the ball
+			iSetColor(255, 120, 30);                              
 			iFilledCircle(cx - p.facing * r * 1.3, cy, r * 0.55);
 			iSetColor(255, 90, 20);
 			iFilledCircle(cx, cy, r + flick);
@@ -292,7 +281,7 @@ inline void drawProjectiles(double cameraX)
 
 		if (tex != 0)
 		{
-			// flip left-facing sprites by drawing from the far edge
+			
 			if (p.facing < 0 && p.kind == PROJ_ARROW)
 				iShowImage(sx + p.w / 2, p.y, (int)(-p.w), (int)p.h, tex);
 			else
