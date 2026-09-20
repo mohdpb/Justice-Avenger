@@ -50,7 +50,7 @@ enum AppState
 #define HURT_DURATION 18  
 
 
-#define TOTAL_DAYS  5
+#define TOTAL_DAYS  8
 #define TOTAL_LIVES 3
 #define DAY_TRANSITION_TICKS (TICKS_PER_SECOND * 1)  
 
