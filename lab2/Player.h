@@ -6,20 +6,24 @@
 #include <stdio.h>
 
 #define PLAYER_SCALE  2.0
-#define PLAYER_WIDTH  (BASE_UNIT_W * PLAYER_SCALE)   // 90
-#define PLAYER_HEIGHT (BASE_UNIT_H * PLAYER_SCALE)   // 130
-
+#define PLAYER_WIDTH  (BASE_UNIT_W * PLAYER_SCALE)   
+#define PLAYER_HEIGHT (BASE_UNIT_H * PLAYER_SCALE)   
+#define PLAYER_BASE_DAMAGE     30
+#define PLAYER_DAY8_DAMAGE_BONUS 20
 #define PLAYER_MOVE_SPEED      4.0
 #define PLAYER_JUMP_SPEED      11.0
 #define PLAYER_MAX_HEALTH      200
+#define PLAYER_MAX_HEALTH_DAY5_FIGHT 400
+#define PLAYER_MAX_HEALTH_DAY8_FIGHT 600
 #define PLAYER_ATTACK_COOLDOWN 18
-#define PLAYER_BASE_DAMAGE     30
 struct Player
 {
-    double x, y, vy;
-    int facing;              
-    int health;
-    FighterState state;
+	double x, y, vy;
+	int facing;
+	int health;
+	int maxHealth;
+	int extraDamage;         // add this line
+	FighterState state;
 
     int frameIndex, frameTimer;
     int hurtTimer;
@@ -49,8 +53,9 @@ inline void loadPlayerAssets(Player &p)
 
 inline void resetPlayer(Player &p, double startX)
 {
-    p.x = startX; p.y = GROUND_Y; p.vy = 0; p.facing = 1;
-    p.health = PLAYER_MAX_HEALTH; p.state = IDLE;
+	p.damageBonus = 0; p.damageBoostTimer = 0; p.extraDamage = 0;
+		p.x = startX; p.y = GROUND_Y; p.vy = 0; p.facing = 1;
+		p.health = PLAYER_MAX_HEALTH; p.maxHealth = PLAYER_MAX_HEALTH; p.state = IDLE;
     p.frameIndex = 0; p.frameTimer = 0; p.hurtTimer = 0; p.attackCooldown = 0;
     p.onGround = true; p.attackLanded = false;
     p.damageBonus = 0; p.damageBoostTimer = 0;
@@ -103,7 +108,7 @@ inline HitBox getPlayerAttackBox(Player &p)
 
 inline int getPlayerAttackDamage(Player &p)
 {
-    return PLAYER_BASE_DAMAGE + (p.damageBoostTimer > 0 ? p.damageBonus : 0);
+	return PLAYER_BASE_DAMAGE + p.extraDamage + (p.damageBoostTimer > 0 ? p.damageBonus : 0);
 }
 
 inline void applyPlayerDamageBoost(Player &p, int bonus, int durationTicks)
@@ -118,6 +123,11 @@ inline void healPlayer(Player &p, int amount)
     if (p.health > PLAYER_MAX_HEALTH) p.health = PLAYER_MAX_HEALTH;
 }
 
+inline void setPlayerMaxHealthForFight(Player &p, int newMax)
+{
+	p.health = newMax;
+	p.maxHealth = newMax;
+}
 inline void setPlayerHurt(Player &p)
 {
     setPlayerState(p, HURT);
@@ -238,4 +248,4 @@ inline void drawPlayer(Player &p, double cameraX)
     }
 }
 
-#endif H
+#endif 

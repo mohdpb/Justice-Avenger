@@ -114,16 +114,15 @@ void handleGameCompleteInput();
 static unsigned int loadStoryImage(int n)
 {
 	const char *fmts[] = {
-		"assets/story/story_%d.%s",
-		"assets/story/story_%02d.%s",
-		"assets/story/story%d.%s",
-		"assets/story/%d.%s"
+		"assets/story/slide_%d.%s",
+		"assets/story/slide_%02d.%s",
+		"assets/story/slide%d.%s"
 	};
-	const char *exts[] = { "png", "jpg", "jpeg", "png.png", "jpg.jpg" };
+	const char *exts[] = { "png", "jpg", "jpeg", "bmp" };
 	char path[128];
 
-	for (int f = 0; f < 4; f++)
-	for (int e = 0; e < 5; e++)
+	for (int f = 0; f < 3; f++)
+	for (int e = 0; e < 4; e++)
 	{
 		sprintf(path, fmts[f], n, exts[e]);
 		if (enemyFileExists(path))
@@ -132,7 +131,7 @@ static unsigned int loadStoryImage(int n)
 			return iLoadImage(path);
 		}
 	}
-	printf("Story image %d NOT found (tried assets/story/story_%d.png and variants)\n", n, n);
+	printf("Story image %d NOT found (tried assets/story/slide_%d.png and variants)\n", n, n);
 	return 0;
 }
 void loadAllAssets()
@@ -190,7 +189,7 @@ void spawnEnemiesForDay(int day)
 	clearProjectiles();
 
 	DayWave wave = getDayWave(day);
-	double spacing = 140, startX = 500;
+	double spacing = 220, startX = 700;
 
 	spawnGroup(ENEMY_SMALL, wave.smallCount, day, startX, spacing);
 	spawnGroup(ENEMY_MEDIUM, wave.mediumCount, day, startX, spacing);
@@ -237,9 +236,18 @@ void updateCamera()
 	cameraX = target;
 }
 
+
 void beginDay()
 {
-	resetPlayer(player, 150);
+	resetPlayer(player, 100);   // reset position/health/state before anything else
+
+	if (currentDay == 5)
+		setPlayerMaxHealthForFight(player, PLAYER_MAX_HEALTH_DAY5_FIGHT);
+	else if (currentDay == 8)
+	{
+		setPlayerMaxHealthForFight(player, PLAYER_MAX_HEALTH_DAY8_FIGHT);
+		player.extraDamage = PLAYER_DAY8_DAMAGE_BONUS;
+	}
 	spawnEnemiesForDay(currentDay);
 	resetPowerUp(powerUp);
 	cameraX = 0;
@@ -248,7 +256,6 @@ void beginDay()
 	pendingGameOver = false;
 	appState = STATE_PLAYING;
 }
-
 void beginDayTransition()
 {
 	dayTransitionTimer = DAY_TRANSITION_TICKS;
@@ -613,7 +620,7 @@ void drawPlayerHealthBar()
 	iSetColor(40, 40, 40);
 	iFilledRectangle(x, y, barW, barH);
 
-	double pct = (double)player.health / (double)PLAYER_MAX_HEALTH;
+	double pct = (double)player.health / (double)player.maxHealth;
 	if (pct < 0) pct = 0;
 	if (pct > 0.5) iSetColor(30, 200, 60);
 	else if (pct > 0.25) iSetColor(230, 200, 30);

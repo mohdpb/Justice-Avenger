@@ -13,7 +13,7 @@
 #define ARCHER_RANGE          460.0
 #define ARCHER_COOLDOWN       95
 #define FIRE_RANGE            380.0
-#define FIRE_COOLDOWN         120
+#define FIRE_COOLDOWN         800
 #define BOMBER_RANGE          430.0
 #define BOMBER_COOLDOWN       150
 #define RANGED_MIN_GAP        150.0   
