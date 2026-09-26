@@ -3,13 +3,15 @@
 #include "Player.h"
 #include "Enemy.h"
 #include "PowerUp.h"
-#include "Projectile.h"       // add this
-#include "EnemyAbilities.h"   // then this � must come after Enemy.h and Projectile.h
+#include "Projectile.h"       
+#include "EnemyAbilities.h"   
 #include "LevelManager.h"
 #include "SettingsManager.h"
 #include "SaveManager.h"
 #include "HighScoreManager.h"
 #include "MenuSystem.h"
+#include "AudioManager.h"
+#include "BackgroundNPC.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -35,20 +37,42 @@ HighScoreList highScores;
 unsigned int bgTex = 0;
 unsigned int titleTex = 0;
 unsigned int arenaBgTex = 0;
-unsigned int groundTex = 0;
 unsigned int heartFullTex = 0;
 unsigned int heartEmptyTex = 0;
 unsigned int storyTex[STORY_SLIDE_COUNT];
 int currentStorySlide = 0;
+int storySlideTimer   = 0;      
+#define STORY_SLIDE_TICKS (2 * TICKS_PER_SECOND)   
+
+#define CREDIT_IMAGE_COUNT 3
+#define CREDIT_IMG_W 510
+#define CREDIT_IMG_H 340
+#define CREDIT_IMG_GAP 50
+#define CREDIT_STRIDE (CREDIT_IMG_H + CREDIT_IMG_GAP)
+#define CREDIT_SCROLL_SPEED 1.2
+
+unsigned int creditTex[CREDIT_IMAGE_COUNT] = { 0 };
+double creditScrollOffset = 0.0;
 
 double cameraX = 0;
 
 int currentDay = 1;
 int livesRemaining = TOTAL_LIVES;
+int score = 0;
 int dayTransitionTimer = 0;
 int deathPauseTimer = 0;
 int dayClearPauseTimer = 0;
 bool pendingGameOver = false;
+
+#define HIT_STOP_TICKS_HIT   5    // freeze-frame length on a normal landed hit
+#define HIT_STOP_TICKS_KILL  10   // slightly longer on a kill, for extra weight
+#define HIT_STOP_TICKS_HURT  4    // brief freeze when the player takes damage
+#define COMBO_WINDOW_TICKS   90   // ~1.5s at 60 ticks/sec to land the next hit
+#define COMBO_HITS_PER_TIER  5    // every N hits in a combo raises the multiplier by 1
+
+int hitStopTimer = 0;
+int comboCount = 0;
+int comboTimer = 0;
 
 char nameEntryBuffer[MAX_NAME_LEN];
 int nameEntryLen = 0;
@@ -67,6 +91,7 @@ void onDayCleared();
 void triggerPlayerDeathSequence();
 void triggerDayClearSequence();
 void resolvePlayerAttack();
+void resolveFireballHits();
 void resolveEnemyAttack(Enemy &e);
 void updateCamera();
 
@@ -110,19 +135,53 @@ void handleDayClearPause();
 void handlePauseMenuClicks();
 void handleGameOverInput();
 void handleGameCompleteInput();
-// Finds story image number n, trying several common names and extensions.
+
+static bool storySlideExists(int n)
+{
+	const char *fmts[] = {
+		"assets/story/slide_%d.%s",
+		"assets/story/slide_%02d.%s",
+		"assets/story/slide%d.%s",
+		"assets/story/slide%02d.%s",
+		"assets/story/story_%d.%s",
+		"assets/story/story_%02d.%s",
+		"assets/story/story%d.%s",
+		"assets/story/story%02d.%s",
+		"assets/story/%d.%s",
+		"assets/story/%02d.%s"
+	};
+	const char *exts[] = { "png", "jpg", "jpeg", "bmp", "png.png", "jpg.jpg" };
+	char path[128];
+
+	for (int f = 0; f < 10; f++)
+	for (int e = 0; e < 6; e++)
+	{
+		sprintf(path, fmts[f], n, exts[e]);
+		if (enemyFileExists(path))
+			return true;
+	}
+	return false;
+}
+
 static unsigned int loadStoryImage(int n)
 {
 	const char *fmts[] = {
 		"assets/story/slide_%d.%s",
 		"assets/story/slide_%02d.%s",
-		"assets/story/slide%d.%s"
+		"assets/story/slide%d.%s",
+		"assets/story/slide%02d.%s",
+		"assets/story/story_%d.%s",
+		"assets/story/story_%02d.%s",
+		"assets/story/story%d.%s",
+		"assets/story/story%02d.%s",
+		"assets/story/%d.%s",
+		"assets/story/%02d.%s"
 	};
-	const char *exts[] = { "png", "jpg", "jpeg", "bmp" };
+	const char *exts[] = { "png", "jpg", "jpeg", "bmp", "png.png", "jpg.jpg" };
 	char path[128];
 
-	for (int f = 0; f < 3; f++)
-	for (int e = 0; e < 4; e++)
+	for (int f = 0; f < 10; f++)
+	for (int e = 0; e < 6; e++)
 	{
 		sprintf(path, fmts[f], n, exts[e]);
 		if (enemyFileExists(path))
@@ -131,7 +190,7 @@ static unsigned int loadStoryImage(int n)
 			return iLoadImage(path);
 		}
 	}
-	printf("Story image %d NOT found (tried assets/story/slide_%d.png and variants)\n", n, n);
+	printf("Story image %d NOT found (tried slide_%d.png, story_%d.png, and variants)\n", n, n, n);
 	return 0;
 }
 void loadAllAssets()
@@ -151,16 +210,25 @@ void loadAllAssets()
 	bgTex = iLoadImage("assets/menu_background.png");
 	titleTex = iLoadImage("assets/title.png");
 	arenaBgTex = iLoadImage("assets/background.png");
-	groundTex = iLoadImage("assets/ground.png");
 	heartFullTex = iLoadImage("assets/hearts/heart_full.png");
 	heartEmptyTex = iLoadImage("assets/hearts/heart_empty.png");
 
-	// story slides: accepts story_0..story_3 OR story_1..story_4
-	
-	// numbering may start at 0 or at 1
-	int storyStart = enemyFileExists("assets/story/story_0.png") ? 0 : 1;
+
+	int storyStart = 0;
+	if (!storySlideExists(0) && storySlideExists(1))
+		storyStart = 1;
+
 	for (int i = 0; i < STORY_SLIDE_COUNT; i++)
 		storyTex[i] = loadStoryImage(i + storyStart);
+
+	for (int i = 0; i < CREDIT_IMAGE_COUNT; i++)
+	{
+		char path[64];
+		sprintf(path, "assets/credit_%d.png", i);
+		creditTex[i] = iLoadImage(path);
+	}
+
+	loadBgNpcAssets();
 }
 void copyEnemyTextures(Enemy &dst, Enemy &src)
 {
@@ -189,7 +257,7 @@ void spawnEnemiesForDay(int day)
 	clearProjectiles();
 
 	DayWave wave = getDayWave(day);
-	double spacing = 220, startX = 700;
+	double spacing = 250, startX = 500;
 
 	spawnGroup(ENEMY_SMALL, wave.smallCount, day, startX, spacing);
 	spawnGroup(ENEMY_MEDIUM, wave.mediumCount, day, startX, spacing);
@@ -199,8 +267,8 @@ void spawnEnemiesForDay(int day)
 	spawnGroup(ENEMY_FIRE, wave.fireCount, day, startX, spacing);
 		if (specialEnemyLimit(ENEMY_BOMBER, day) > 0 && enemyCount < MAX_ENEMIES)
 	{
-			double bx = startX + enemyCount * spacing + BOMBER_EXTRA_GAP;   // well past the fire enemies
-			if (bx > WORLD_W - 250) bx = WORLD_W - 250;                    // stay inside the level
+			double bx = startX + enemyCount * spacing + BOMBER_EXTRA_GAP;   
+			if (bx > WORLD_W - 250) bx = WORLD_W - 250;                    
 		resetEnemy(enemies[enemyCount], ENEMY_BOMBER, bx, bx - 70, bx + 70, day);
 		copyEnemyTextures(enemies[enemyCount], enemyTemplates[ENEMY_BOMBER]);
 		initEnemyAbilities(enemies[enemyCount], day);
@@ -236,26 +304,20 @@ void updateCamera()
 	cameraX = target;
 }
 
-
 void beginDay()
 {
-	resetPlayer(player, 100);   // reset position/health/state before anything else
-
-	if (currentDay == 5)
-		setPlayerMaxHealthForFight(player, PLAYER_MAX_HEALTH_DAY5_FIGHT);
-	else if (currentDay == 8)
-	{
-		setPlayerMaxHealthForFight(player, PLAYER_MAX_HEALTH_DAY8_FIGHT);
-		player.extraDamage = PLAYER_DAY8_DAMAGE_BONUS;
-	}
+	resetPlayer(player, 150);
+	if (currentDay >= FIREBALL_UNLOCK_DAY) grantFireball(player, FIREBALL_START_AMMO);
 	spawnEnemiesForDay(currentDay);
 	resetPowerUp(powerUp);
+	resetBgNpcs();
 	cameraX = 0;
 	deathHandled = false;
 	dayClearHandled = false;
 	pendingGameOver = false;
 	appState = STATE_PLAYING;
 }
+
 void beginDayTransition()
 {
 	dayTransitionTimer = DAY_TRANSITION_TICKS;
@@ -265,6 +327,7 @@ void beginDayTransition()
 void beginStoryIntro()
 {
 	currentStorySlide = 0;
+	storySlideTimer   = STORY_SLIDE_TICKS;
 	appState = STATE_STORY_INTRO;
 }
 
@@ -272,8 +335,10 @@ void startNewGame()
 {
 	currentDay = 1;
 	livesRemaining = TOTAL_LIVES;
+	score = 0;
 	saveData.currentDay = currentDay;
 	saveData.livesRemaining = livesRemaining;
+	saveData.score = score;
 	writeSave(saveData);
 	beginStoryIntro();
 }
@@ -284,6 +349,7 @@ void continueGame()
 	loadSave(saveData);
 	currentDay = saveData.currentDay;
 	livesRemaining = saveData.livesRemaining;
+	score = saveData.score;
 	beginDayTransition();
 }
 
@@ -300,6 +366,7 @@ void onDayCleared()
 		currentDay++;
 		saveData.currentDay = currentDay;
 		saveData.livesRemaining = livesRemaining;
+		saveData.score = score;
 		writeSave(saveData);
 		beginDayTransition();
 	}
@@ -317,6 +384,7 @@ void triggerPlayerDeathSequence()
 	{
 		saveData.currentDay = currentDay;
 		saveData.livesRemaining = livesRemaining;
+		saveData.score = score;
 		writeSave(saveData);
 		pendingGameOver = false;
 	}
@@ -340,7 +408,46 @@ void resolvePlayerAttack()
 		if (aabbOverlap(pBox, eBox))
 		{
 			applyDamageToEnemyWithShield(enemies[i], getPlayerAttackDamage(player), player.facing);
+
+			comboCount++;
+			comboTimer = COMBO_WINDOW_TICKS;
+			int comboMult = 1 + (comboCount - 1) / COMBO_HITS_PER_TIER;
+
+			bool killed = (enemies[i].health <= 0);
+			int points = killed ? 6 : 1;
+			score += points * comboMult;
+			hitStopTimer = killed ? HIT_STOP_TICKS_KILL : HIT_STOP_TICKS_HIT;
 			break;
+		}
+	}
+}
+
+void resolveFireballHits()
+{
+	for (int i = 0; i < MAX_FIREBALLS; i++)
+	{
+		Fireball &f = player.fireballs[i];
+		if (!f.active) continue;
+		HitBox fBox = getFireballBox(f);
+
+		for (int e = 0; e < enemyCount; e++)
+		{
+			if (!enemies[e].alive || enemies[e].state == DEAD) continue;
+			if (aabbOverlap(fBox, getEnemyBox(enemies[e])))
+			{
+				applyDamageToEnemyWithShield(enemies[e], FIREBALL_DAMAGE, f.facing);
+				f.active = false;
+
+				comboCount++;
+				comboTimer = COMBO_WINDOW_TICKS;
+				int comboMult = 1 + (comboCount - 1) / COMBO_HITS_PER_TIER;
+
+				bool killed = (enemies[e].health <= 0);
+				int points = killed ? 6 : 1;
+				score += points * comboMult;
+				hitStopTimer = killed ? HIT_STOP_TICKS_KILL : HIT_STOP_TICKS_HIT;
+				break;
+			}
 		}
 	}
 }
@@ -351,7 +458,14 @@ void resolveEnemyAttack(Enemy &e)
 	HitBox eBox = getEnemyBox(e);
 	HitBox pBox = getPlayerBox(player);
 	if (aabbOverlap(eBox, pBox))
-		applyDamageToPlayer(player, e.stats.attackDamage, e.facing);
+	{
+		if (applyDamageToPlayer(player, e.stats.attackDamage, e.facing))
+		{
+			comboCount = 0;
+			comboTimer = 0;
+			hitStopTimer = HIT_STOP_TICKS_HURT;
+		}
+	}
 }
 
 int buildMainMenuButtons(Button out[6])
@@ -488,12 +602,65 @@ void drawAudioSettingsScreen()
 void drawAboutMenuScreen()
 {
 	drawBackgroundImage(bgTex);
+
+	// ── Downward Scrolling Credit Images ─────────────────────────────────
+	double totalSpan = CREDIT_IMAGE_COUNT * CREDIT_STRIDE;
+	int imgX = (WINDOW_W - CREDIT_IMG_W) / 2;
+
+	for (int i = 0; i < CREDIT_IMAGE_COUNT; i++)
+	{
+		// Base Y at offset 0: Image 0 centered vertically, Image 1 & 2 above it
+		// As creditScrollOffset increases, images descend downward (drawY decreases)
+		double baseRelY = 85.0 + i * CREDIT_STRIDE + creditScrollOffset;
+
+		// Wrap around into range [-CREDIT_IMG_H, totalSpan - CREDIT_IMG_H)
+		double drawY = fmod(baseRelY + CREDIT_IMG_H, totalSpan);
+		if (drawY < 0) drawY += totalSpan;
+		drawY -= CREDIT_IMG_H;
+
+		// Only draw if within visible screen bounds
+		if (drawY + CREDIT_IMG_H > 0 && drawY < WINDOW_H)
+		{
+			if (creditTex[i] != 0)
+			{
+				iShowImage(imgX, (int)drawY, CREDIT_IMG_W, CREDIT_IMG_H, creditTex[i]);
+			}
+			else
+			{
+				iSetColor(25, 25, 35);
+				iFilledRectangle(imgX, drawY, CREDIT_IMG_W, CREDIT_IMG_H);
+				char label[64];
+				sprintf(label, "credit_%d.png", i);
+				iSetColor(220, 220, 240);
+				drawCenteredText(WINDOW_W / 2, drawY + CREDIT_IMG_H / 2, label, GLUT_BITMAP_HELVETICA_18);
+			}
+
+			// Subtle border frame around each credit slide
+			iSetColor(70, 70, 95);
+			iRectangle(imgX, drawY, CREDIT_IMG_W, CREDIT_IMG_H);
+		}
+	}
+
+	// ── Top Header Bar (masks images entering from the top) ─────────────
+	iSetColor(15, 15, 22);
+	iFilledRectangle(0, WINDOW_H - 55, WINDOW_W, 55);
+	iSetColor(70, 70, 100);
+	iLine(0, WINDOW_H - 55, WINDOW_W, WINDOW_H - 55);
+
 	iSetColor(255, 255, 255);
-	drawCenteredText(WINDOW_W / 2, WINDOW_H - 100, "About the Game", GLUT_BITMAP_HELVETICA_18);
-	drawCenteredText(WINDOW_W / 2, WINDOW_H / 2, "Credits: (coming soon)", GLUT_BITMAP_HELVETICA_18);
+	drawCenteredText(WINDOW_W / 2, WINDOW_H - 35, "About the Game", GLUT_BITMAP_TIMES_ROMAN_24);
+
+	// ── Bottom Bar (masks images exiting below, houses Back button) ─────
+	iSetColor(15, 15, 22);
+	iFilledRectangle(0, 0, WINDOW_W, 70);
+	iSetColor(70, 70, 100);
+	iLine(0, 70, WINDOW_W, 70);
+
+	iSetColor(160, 160, 180);
+	iText(25, 28, (char*)"W/S or UP/DOWN to scroll", GLUT_BITMAP_HELVETICA_12);
 
 	Button btns[1];
-	int n = buildBackOnlyButton(btns, 150);
+	int n = buildBackOnlyButton(btns, 13);
 	for (int i = 0; i < n; i++)
 		drawButton(btns[i], isPointInButton(btns[i], iMouseX, iMouseY));
 }
@@ -513,7 +680,9 @@ void drawHighScoresScreen()
 		double y = WINDOW_H / 2 + 60;
 		for (int i = 0; i < highScores.count; i++)
 		{
-			drawCenteredText(WINDOW_W / 2, y, highScores.names[i], GLUT_BITMAP_HELVETICA_18);
+			char entry[64];
+			sprintf(entry, "%s - %d", highScores.names[i], highScores.scores[i]);
+			drawCenteredText(WINDOW_W / 2, y, entry, GLUT_BITMAP_HELVETICA_18);
 			y -= 35;
 		}
 	}
@@ -533,9 +702,7 @@ void drawNameEntryScreen()
 	drawCenteredText(WINDOW_W / 2, WINDOW_H / 2 - 40, "Press ENTER to confirm (Backspace to edit)", GLUT_BITMAP_HELVETICA_18);
 }
 
-// Full-screen slideshow, one image at a time. Falls back to a plain
-// dark screen with a placeholder label + slide number until the actual
-// story images are added to assets/story/ (see loadAllAssets()).
+
 void drawStoryIntroScreen()
 {
 	unsigned int tex = storyTex[currentStorySlide];
@@ -552,9 +719,6 @@ void drawStoryIntroScreen()
 		iSetColor(255, 255, 255);
 		drawCenteredText(WINDOW_W / 2, WINDOW_H / 2, label, GLUT_BITMAP_HELVETICA_18);
 	}
-
-	iSetColor(255, 255, 255);
-	drawCenteredText(WINDOW_W / 2, 30, "Click or press any key to continue", GLUT_BITMAP_HELVETICA_18);
 }
 
 void drawDayTransitionScreen()
@@ -620,7 +784,7 @@ void drawPlayerHealthBar()
 	iSetColor(40, 40, 40);
 	iFilledRectangle(x, y, barW, barH);
 
-	double pct = (double)player.health / (double)player.maxHealth;
+	double pct = (double)player.health / (double)PLAYER_MAX_HEALTH;
 	if (pct < 0) pct = 0;
 	if (pct > 0.5) iSetColor(30, 200, 60);
 	else if (pct > 0.25) iSetColor(230, 200, 30);
@@ -674,14 +838,6 @@ void drawScrollingWorldBackground()
 			iSetColor(25, 25, 40);
 			iFilledRectangle(tileScreenX, 0, tileW, WINDOW_H);
 		}
-
-		if (groundTex != 0)
-			iShowImage(tileScreenX, 0, tileW, GROUND_Y, groundTex);
-		else
-		{
-			iSetColor(80, 60, 40);
-			iFilledRectangle(tileScreenX, 0, tileW, GROUND_Y);
-		}
 	}
 }
 
@@ -689,14 +845,12 @@ void drawGameplayScene()
 {
 	drawScrollingWorldBackground();
 
+	// Background NPCs - drawn behind all fighters
+	drawBgNpcs(cameraX);
+
 	for (int i = 0; i < enemyCount; i++)
 	{
-		for (int i = 0; i < enemyCount; i++)
-		{
-			drawFlyerWings(enemies[i], cameraX);
-			drawEnemy(enemies[i], cameraX);
-			drawEnemyShieldBar(enemies[i], cameraX);
-		}
+		drawFlyerWings(enemies[i], cameraX);
 		drawEnemy(enemies[i], cameraX);
 		drawEnemyShieldBar(enemies[i], cameraX);
 	}
@@ -711,7 +865,36 @@ void drawGameplayScene()
 	sprintf(hud, "Day %d / %d", currentDay, TOTAL_DAYS);
 	iSetColor(255, 255, 255);
 	iText(20, WINDOW_H - 120, hud);
-	iText(20, WINDOW_H - 140, (char*)"A/D move  W jump  J attack  ESC pause");
+
+	if (player.hasFireball)
+	{
+		char fbHud[64];
+		sprintf(fbHud, "Fireballs: %d", player.fireballAmmo);
+		iText(20, WINDOW_H - 140, fbHud);
+		iText(20, WINDOW_H - 160, (char*)"A/D move  W jump  J attack  K fireball  ESC pause");
+	}
+	else
+	{
+		iText(20, WINDOW_H - 140, (char*)"A/D move  W jump  J attack  ESC pause");
+	}
+
+	char scoreHud[32];
+	sprintf(scoreHud, "Score: %d", score);
+	int scoreLen = (int)strlen(scoreHud);
+	double scoreX = WINDOW_W - 20 - scoreLen * 10.0;   // right-aligned, ~10px/char at this font
+	iSetColor(255, 220, 60);
+	iText(scoreX, WINDOW_H - 30, scoreHud);
+
+	if (comboCount > 1)
+	{
+		char comboHud[32];
+		int comboMult = 1 + (comboCount - 1) / COMBO_HITS_PER_TIER;
+		sprintf(comboHud, "Combo x%d (%d hits)", comboMult, comboCount);
+		int comboLen = (int)strlen(comboHud);
+		double comboX = WINDOW_W - 20 - comboLen * 10.0;
+		iSetColor(255, 140, 60);
+		iText(comboX, WINDOW_H - 55, comboHud);
+	}
 }
 
 void handleMainMenuClicks()
@@ -721,11 +904,13 @@ void handleMainMenuClicks()
 	int n = buildMainMenuButtons(btns);
 	int idx = getClickedButtonIndex(btns, n, g_mouseClickX, g_mouseClickY);
 
+	if (idx >= 0) sfxClick(settings.sfxVolume);
+
 	if (idx == 0)       { if (saveFileExists()) appState = STATE_NEW_GAME_CONFIRM; else startNewGame(); }
 	else if (idx == 1)  { continueGame(); }
 	else if (idx == 2)  { appState = STATE_OPTIONS_MENU; }
 	else if (idx == 3)  { loadHighScores(highScores); appState = STATE_HIGHSCORES_MENU; }
-	else if (idx == 4)  { appState = STATE_ABOUT_MENU; }
+	else if (idx == 4)  { creditScrollOffset = 0.0; appState = STATE_ABOUT_MENU; }
 	else if (idx == 5)  { exit(0); }
 }
 
@@ -736,6 +921,7 @@ void handleNewGameConfirmClicks()
 	int n = buildConfirmButtons(btns);
 	int idx = getClickedButtonIndex(btns, n, g_mouseClickX, g_mouseClickY);
 
+	if (idx >= 0) sfxClick(settings.sfxVolume);
 	if (idx == 0) startNewGame();
 	else if (idx == 1) appState = STATE_MAIN_MENU;
 }
@@ -747,6 +933,7 @@ void handleOptionsMenuClicks()
 	int n = buildOptionsButtons(btns);
 	int idx = getClickedButtonIndex(btns, n, g_mouseClickX, g_mouseClickY);
 
+	if (idx >= 0) sfxClick(settings.sfxVolume);
 	if (idx == 0) appState = STATE_AUDIO_SETTINGS;
 	else if (idx == 1) appState = STATE_MAIN_MENU;
 }
@@ -758,6 +945,7 @@ void handleAudioSettingsClicks()
 	int n = buildAudioButtons(btns);
 	int idx = getClickedButtonIndex(btns, n, g_mouseClickX, g_mouseClickY);
 
+	if (idx >= 0) sfxClick(settings.sfxVolume);
 	if (idx == 0) decreaseSfx(settings);
 	else if (idx == 1) increaseSfx(settings);
 	else if (idx == 2) decreaseMusic(settings);
@@ -767,10 +955,31 @@ void handleAudioSettingsClicks()
 
 void handleAboutMenuClicks()
 {
+	// Continuous auto-scroll downward
+	creditScrollOffset += CREDIT_SCROLL_SPEED;
+
+	// Keyboard scroll controls (W / UP scrolls back up, S / DOWN scrolls down faster)
+	if (isKeyPressed('w') || isKeyPressed('W') || isSpecialKeyPressed(GLUT_KEY_UP))
+		creditScrollOffset += 3.5;
+	if (isKeyPressed('s') || isKeyPressed('S') || isSpecialKeyPressed(GLUT_KEY_DOWN))
+		creditScrollOffset -= 3.5;
+
+	double totalSpan = CREDIT_IMAGE_COUNT * CREDIT_STRIDE;
+	creditScrollOffset = fmod(creditScrollOffset, totalSpan);
+	if (creditScrollOffset < 0) creditScrollOffset += totalSpan;
+
+	// ESC to return to main menu
+	if (keyJustPressed(27))
+	{
+		appState = STATE_MAIN_MENU;
+		return;
+	}
+
 	if (!g_mouseClicked) return;
 	Button btns[1];
-	int n = buildBackOnlyButton(btns, 150);
+	int n = buildBackOnlyButton(btns, 13);
 	int idx = getClickedButtonIndex(btns, n, g_mouseClickX, g_mouseClickY);
+	if (idx >= 0) sfxClick(settings.sfxVolume);
 	if (idx == 0) appState = STATE_MAIN_MENU;
 }
 
@@ -780,6 +989,7 @@ void handleHighScoresMenuClicks()
 	Button btns[1];
 	int n = buildBackOnlyButton(btns, 150);
 	int idx = getClickedButtonIndex(btns, n, g_mouseClickX, g_mouseClickY);
+	if (idx >= 0) sfxClick(settings.sfxVolume);
 	if (idx == 0) appState = STATE_MAIN_MENU;
 }
 
@@ -809,31 +1019,24 @@ void handleNameEntryInput()
 
 	if (keyJustPressed(13) && nameEntryLen > 0)
 	{
-		addHighScore(highScores, nameEntryBuffer);
+		addHighScore(highScores, nameEntryBuffer, score);
 		deleteSave();
 		appState = STATE_GAME_COMPLETE;
 	}
 }
 
-// Advances on a mouse click OR any keyboard key - loops every key code
-// checking keyJustPressed() since there's no single "any key" event in
-// iGraphics.
+// Story slides auto-advance every STORY_SLIDE_TICKS ticks.
+// Click and key input are intentionally ignored during the story intro.
 void handleStoryIntro()
 {
-	bool advance = g_mouseClicked;
-	if (!advance)
-	{
-		for (int k = 0; k < 256; k++)
-		{
-			if (keyJustPressed((unsigned char)k)) { advance = true; break; }
-		}
-	}
-
-	if (advance)
+	storySlideTimer--;
+	if (storySlideTimer <= 0)
 	{
 		currentStorySlide++;
 		if (currentStorySlide >= STORY_SLIDE_COUNT)
 			beginDayTransition();   // story's over - start Day 1
+		else
+			storySlideTimer = STORY_SLIDE_TICKS;
 	}
 }
 
@@ -859,7 +1062,12 @@ void resolveProjectileHits()
 			if (player.state == DEAD) continue;
 			if (aabbOverlap(prBox, pBox))
 			{
-				applyDamageToPlayer(player, pr.damage, pr.facing);
+				if (applyDamageToPlayer(player, pr.damage, pr.facing))
+				{
+					comboCount = 0;
+					comboTimer = 0;
+					hitStopTimer = HIT_STOP_TICKS_HURT;
+				}
 				pr.hasHit = true;
 				if (pr.kind == PROJ_BOMB && !pr.exploding) startExplosion(pr);
 				else if (!pr.exploding)                    pr.active = false;
@@ -890,8 +1098,29 @@ void handleGameplay()
 		return;
 	}
 
+	if (hitStopTimer > 0)
+	{
+		hitStopTimer--;
+		return;   // freeze-frame: skip updates for a few ticks, keep rendering
+	}
+
+	if (comboTimer > 0)
+	{
+		comboTimer--;
+		if (comboTimer <= 0) comboCount = 0;
+	}
+
+	// Cache player hurt state BEFORE update to detect a new hit this tick
+	bool wasHurt = (player.state == HURT);
+
 	if (updatePlayer(player))
 		resolvePlayerAttack();
+
+	resolveFireballHits();   // the player's own thrown fireballs vs enemies
+
+	// Fire hit SFX on the first tick the player enters HURT state
+	if (!wasHurt && player.state == HURT)
+		sfxHit(settings.sfxVolume);
 
 	for (int i = 0; i < enemyCount; i++)
 	{
@@ -900,10 +1129,15 @@ void handleGameplay()
 		updateEnemyAbilities(enemies[i], player.x, enemies, enemyCount, MAX_ENEMIES, currentDay);
 	}
 
+	// Also detect hits from projectiles resolved below
+	bool wasHurt2 = (player.state == HURT);
 	updateProjectiles();
 	resolveProjectileHits();
+	if (!wasHurt2 && player.state == HURT)
+		sfxHit(settings.sfxVolume);
 
 	updateCamera();
+	updateBgNpcs(cameraX);
 	updatePowerUp(powerUp);
 	if (powerUp.active)
 	{
@@ -916,6 +1150,7 @@ void handleGameplay()
 			else
 				applyPlayerDamageBoost(player, POWERUP_DAMAGE_BONUS, POWERUP_DAMAGE_DURATION_TICKS);
 
+			sfxPickup(settings.sfxVolume);   // power-up pickup sound
 			powerUp.active = false;
 			powerUp.nextSpawnTimer = POWERUP_MIN_SPAWN_TICKS +
 				(rand() % (POWERUP_MAX_SPAWN_TICKS - POWERUP_MIN_SPAWN_TICKS + 1));
@@ -974,10 +1209,12 @@ void handlePauseMenuClicks()
 	int n = buildPauseButtons(btns);
 	int idx = getClickedButtonIndex(btns, n, g_mouseClickX, g_mouseClickY);
 
+	if (idx >= 0) sfxClick(settings.sfxVolume);
 	if (idx == 0)
 	{
 		saveData.currentDay = currentDay;
 		saveData.livesRemaining = livesRemaining;
+		saveData.score = score;
 		writeSave(saveData);
 		appState = STATE_MAIN_MENU;
 	}
@@ -992,7 +1229,10 @@ void handleGameOverInput()
 		Button btns[1];
 		int n = buildReturnButton(btns);
 		if (getClickedButtonIndex(btns, n, g_mouseClickX, g_mouseClickY) == 0)
+		{
+			sfxClick(settings.sfxVolume);
 			triggered = true;
+		}
 	}
 	if (keyJustPressed(13)) triggered = true;
 	if (triggered) appState = STATE_MAIN_MENU;
@@ -1057,9 +1297,43 @@ void fixedUpdate()
 	case STATE_GAME_COMPLETE:     handleGameCompleteInput(); break;
 	}
 
+	
+	{
+		BgmTrack desired;
+		switch (appState)
+		{
+		case STATE_STORY_INTRO:
+			desired = BGM_STORY;
+			break;
+
+		case STATE_PLAYING:
+		case STATE_DEATH_PAUSE:
+		case STATE_DAY_CLEAR_PAUSE:
+		case STATE_PAUSE_MENU:
+		case STATE_DAY_TRANSITION:
+			desired = BGM_GAMEPLAY;
+			break;
+
+		case STATE_MAIN_MENU:
+		case STATE_NEW_GAME_CONFIRM:
+		case STATE_OPTIONS_MENU:
+		case STATE_AUDIO_SETTINGS:
+		case STATE_ABOUT_MENU:
+		case STATE_HIGHSCORES_MENU:
+		case STATE_NAME_ENTRY:
+		case STATE_GAME_OVER:
+		case STATE_GAME_COMPLETE:
+		default:
+			desired = BGM_MENU;
+			break;
+		}
+		updateBgm(desired, settings.musicVolume);
+	}
+
 	updatePrevKeyState();
 	g_mouseClicked = false;
 }
+
 
 void iMouseMove(int mx, int my) {}
 void iPassiveMouseMove(int mx, int my) {}

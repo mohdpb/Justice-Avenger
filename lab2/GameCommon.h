@@ -28,7 +28,7 @@ enum AppState
 
 #define WINDOW_W   900
 #define WINDOW_H   500
-#define GROUND_Y   80
+#define GROUND_Y   70
 #define GRAVITY    0.6
 
 

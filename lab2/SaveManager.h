@@ -8,12 +8,14 @@ struct SaveData
 {
     int currentDay;
     int livesRemaining;
+    int score;
 };
 
 inline void setDefaultSave(SaveData &s)
 {
     s.currentDay = 1;
     s.livesRemaining = TOTAL_LIVES;
+    s.score = 0;
 }
 
 inline bool saveFileExists()

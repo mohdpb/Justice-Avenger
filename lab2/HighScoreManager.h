@@ -11,6 +11,7 @@
 struct HighScoreList
 {
     char names[MAX_HIGHSCORES][MAX_NAME_LEN];
+    int scores[MAX_HIGHSCORES];
     int count;
 };
 
@@ -31,22 +32,34 @@ inline void saveHighScores(HighScoreList &list)
 }
 
 
-inline void addHighScore(HighScoreList &list, const char name[])
+// Inserts (name, score) keeping the list sorted highest-score-first.
+// If the table is already full, the entry is only kept if it beats
+// the current lowest score - otherwise it's dropped.
+inline void addHighScore(HighScoreList &list, const char name[], int score)
 {
-    if (list.count < MAX_HIGHSCORES)
+    int insertAt = list.count < MAX_HIGHSCORES ? list.count : -1;
+
+    if (insertAt == -1)
     {
-        strncpy(list.names[list.count], name, MAX_NAME_LEN - 1);
-        list.names[list.count][MAX_NAME_LEN - 1] = '\0';
-        list.count++;
+        if (score <= list.scores[MAX_HIGHSCORES - 1]) return;  // doesn't qualify
+        insertAt = MAX_HIGHSCORES - 1;
     }
     else
     {
-      
-        for (int i = 1; i < MAX_HIGHSCORES; i++)
-            strcpy(list.names[i - 1], list.names[i]);
-        strncpy(list.names[MAX_HIGHSCORES - 1], name, MAX_NAME_LEN - 1);
-        list.names[MAX_HIGHSCORES - 1][MAX_NAME_LEN - 1] = '\0';
+        list.count++;
     }
+
+    while (insertAt > 0 && list.scores[insertAt - 1] < score)
+    {
+        list.scores[insertAt] = list.scores[insertAt - 1];
+        strcpy(list.names[insertAt], list.names[insertAt - 1]);
+        insertAt--;
+    }
+
+    list.scores[insertAt] = score;
+    strncpy(list.names[insertAt], name, MAX_NAME_LEN - 1);
+    list.names[insertAt][MAX_NAME_LEN - 1] = '\0';
+
     saveHighScores(list);
 }
 

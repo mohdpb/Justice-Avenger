@@ -125,7 +125,7 @@ inline EnemyStats getEnemyStats(EnemyType type, int day)
 		break;
 
 	case ENEMY_FIRE:
-		s.scale = 2.8;
+		s.scale = 2.5;
 		s.maxHealth = (int)(70 * difficulty);
 		s.moveSpeed = 1.0;
 		s.attackCooldown = 110;
@@ -255,7 +255,7 @@ inline void makeBoss(Enemy &e)
 	e.stats.maxHealth = (int)(e.stats.maxHealth * 1.3);
 	e.health = e.stats.maxHealth;
 	e.stats.attackDamage = (int)(e.stats.attackDamage * 1.15);
-	if (e.type == ENEMY_LARGE) e.stats.scale = 4.6;   // the day-5 boss looks bigger
+	if (e.type == ENEMY_LARGE) e.stats.scale = 4.6;   
 }
 
 
