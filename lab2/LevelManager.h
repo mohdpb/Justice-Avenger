@@ -25,7 +25,7 @@ inline DayWave getDayWave(int day)
 	case 5:  w.smallCount = 2; w.mediumCount = 3; w.largeCount = 2; break;
 	case 6:  w.smallCount = 2; w.mediumCount = 2; w.largeCount = 2; w.archerCount = 2; w.flyerCount = 3; break;
 	case 7:  w.smallCount = 3; w.mediumCount = 2; w.largeCount = 2; w.archerCount = 2; w.flyerCount = 3; w.shieldCount = 1; break;
-	case 8:  w.smallCount = 3; w.mediumCount = 2; w.largeCount = 2; w.shieldCount = 1; w.fireCount = 1; w.flyerCount = 2; w.hasSummonerBoss = true; break;
+	case 8:  w.smallCount = 3; w.mediumCount = 2; w.largeCount = 2; w.shieldCount = 1; w.fireCount = 1; w.flyerCount = 1; w.hasSummonerBoss = true; break;
 	default: w.smallCount = 3; break;
 	}
 	return w;

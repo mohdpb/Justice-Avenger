@@ -12,13 +12,14 @@
 #include "MenuSystem.h"
 #include "AudioManager.h"
 #include "BackgroundNPC.h"
+#include "HealthBarUI.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #define MAX_ENEMIES 24 
-#define BOMBER_EXTRA_GAP  700   // bigger number = bomber spawns further from the fire enemies
+#define BOMBER_EXTRA_GAP  700   
 #undef STORY_SLIDE_COUNT
 #define STORY_SLIDE_COUNT 4
 
@@ -37,11 +38,12 @@ HighScoreList highScores;
 unsigned int bgTex = 0;
 unsigned int titleTex = 0;
 unsigned int arenaBgTex = 0;
+unsigned int groundTex = 0;
 unsigned int heartFullTex = 0;
 unsigned int heartEmptyTex = 0;
 unsigned int storyTex[STORY_SLIDE_COUNT];
 int currentStorySlide = 0;
-int storySlideTimer   = 0;      
+int storySlideTimer   = 0;     
 #define STORY_SLIDE_TICKS (2 * TICKS_PER_SECOND)   
 
 #define CREDIT_IMAGE_COUNT 3
@@ -64,13 +66,9 @@ int deathPauseTimer = 0;
 int dayClearPauseTimer = 0;
 bool pendingGameOver = false;
 
-#define HIT_STOP_TICKS_HIT   5    // freeze-frame length on a normal landed hit
-#define HIT_STOP_TICKS_KILL  10   // slightly longer on a kill, for extra weight
-#define HIT_STOP_TICKS_HURT  4    // brief freeze when the player takes damage
-#define COMBO_WINDOW_TICKS   90   // ~1.5s at 60 ticks/sec to land the next hit
-#define COMBO_HITS_PER_TIER  5    // every N hits in a combo raises the multiplier by 1
+#define COMBO_WINDOW_TICKS   90
+#define COMBO_HITS_PER_TIER  5
 
-int hitStopTimer = 0;
 int comboCount = 0;
 int comboTimer = 0;
 
@@ -229,6 +227,7 @@ void loadAllAssets()
 	}
 
 	loadBgNpcAssets();
+	loadHealthBarAssets();
 }
 void copyEnemyTextures(Enemy &dst, Enemy &src)
 {
@@ -336,6 +335,8 @@ void startNewGame()
 	currentDay = 1;
 	livesRemaining = TOTAL_LIVES;
 	score = 0;
+	comboCount = 0;
+	comboTimer = 0;
 	saveData.currentDay = currentDay;
 	saveData.livesRemaining = livesRemaining;
 	saveData.score = score;
@@ -408,6 +409,7 @@ void resolvePlayerAttack()
 		if (aabbOverlap(pBox, eBox))
 		{
 			applyDamageToEnemyWithShield(enemies[i], getPlayerAttackDamage(player), player.facing);
+			sfxAttack(settings.sfxVolume);
 
 			comboCount++;
 			comboTimer = COMBO_WINDOW_TICKS;
@@ -416,7 +418,6 @@ void resolvePlayerAttack()
 			bool killed = (enemies[i].health <= 0);
 			int points = killed ? 6 : 1;
 			score += points * comboMult;
-			hitStopTimer = killed ? HIT_STOP_TICKS_KILL : HIT_STOP_TICKS_HIT;
 			break;
 		}
 	}
@@ -437,6 +438,7 @@ void resolveFireballHits()
 			{
 				applyDamageToEnemyWithShield(enemies[e], FIREBALL_DAMAGE, f.facing);
 				f.active = false;
+				sfxAttack(settings.sfxVolume);
 
 				comboCount++;
 				comboTimer = COMBO_WINDOW_TICKS;
@@ -445,7 +447,6 @@ void resolveFireballHits()
 				bool killed = (enemies[e].health <= 0);
 				int points = killed ? 6 : 1;
 				score += points * comboMult;
-				hitStopTimer = killed ? HIT_STOP_TICKS_KILL : HIT_STOP_TICKS_HIT;
 				break;
 			}
 		}
@@ -463,7 +464,6 @@ void resolveEnemyAttack(Enemy &e)
 		{
 			comboCount = 0;
 			comboTimer = 0;
-			hitStopTimer = HIT_STOP_TICKS_HURT;
 		}
 	}
 }
@@ -603,22 +603,21 @@ void drawAboutMenuScreen()
 {
 	drawBackgroundImage(bgTex);
 
-	// ── Downward Scrolling Credit Images ─────────────────────────────────
+	
 	double totalSpan = CREDIT_IMAGE_COUNT * CREDIT_STRIDE;
 	int imgX = (WINDOW_W - CREDIT_IMG_W) / 2;
 
 	for (int i = 0; i < CREDIT_IMAGE_COUNT; i++)
 	{
-		// Base Y at offset 0: Image 0 centered vertically, Image 1 & 2 above it
-		// As creditScrollOffset increases, images descend downward (drawY decreases)
-		double baseRelY = 85.0 + i * CREDIT_STRIDE + creditScrollOffset;
+		
+		double baseRelY = 85.0 + i * CREDIT_STRIDE - creditScrollOffset;
 
-		// Wrap around into range [-CREDIT_IMG_H, totalSpan - CREDIT_IMG_H)
+		
 		double drawY = fmod(baseRelY + CREDIT_IMG_H, totalSpan);
 		if (drawY < 0) drawY += totalSpan;
 		drawY -= CREDIT_IMG_H;
 
-		// Only draw if within visible screen bounds
+		
 		if (drawY + CREDIT_IMG_H > 0 && drawY < WINDOW_H)
 		{
 			if (creditTex[i] != 0)
@@ -635,13 +634,13 @@ void drawAboutMenuScreen()
 				drawCenteredText(WINDOW_W / 2, drawY + CREDIT_IMG_H / 2, label, GLUT_BITMAP_HELVETICA_18);
 			}
 
-			// Subtle border frame around each credit slide
+			
 			iSetColor(70, 70, 95);
 			iRectangle(imgX, drawY, CREDIT_IMG_W, CREDIT_IMG_H);
 		}
 	}
 
-	// ── Top Header Bar (masks images entering from the top) ─────────────
+	
 	iSetColor(15, 15, 22);
 	iFilledRectangle(0, WINDOW_H - 55, WINDOW_W, 55);
 	iSetColor(70, 70, 100);
@@ -650,7 +649,7 @@ void drawAboutMenuScreen()
 	iSetColor(255, 255, 255);
 	drawCenteredText(WINDOW_W / 2, WINDOW_H - 35, "About the Game", GLUT_BITMAP_TIMES_ROMAN_24);
 
-	// ── Bottom Bar (masks images exiting below, houses Back button) ─────
+	
 	iSetColor(15, 15, 22);
 	iFilledRectangle(0, 0, WINDOW_W, 70);
 	iSetColor(70, 70, 100);
@@ -780,19 +779,15 @@ void drawGameCompleteScreen()
 void drawPlayerHealthBar()
 {
 	double x = 30, y = WINDOW_H - 90, barW = 250, barH = 22;
-
-	iSetColor(40, 40, 40);
-	iFilledRectangle(x, y, barW, barH);
-
 	double pct = (double)player.health / (double)PLAYER_MAX_HEALTH;
-	if (pct < 0) pct = 0;
-	if (pct > 0.5) iSetColor(30, 200, 60);
-	else if (pct > 0.25) iSetColor(230, 200, 30);
-	else iSetColor(200, 30, 30);
-	iFilledRectangle(x, y, barW * pct, barH);
+
+	int r = 30, g = 200, b = 60;
+	if (pct <= 0.25)      { r = 200; g = 30;  b = 30; }
+	else if (pct <= 0.5)  { r = 230; g = 200; b = 30; }
+
+	drawHealthBar(x, y, barW, barH, pct, g_playerHpBgTex, g_playerHpFillTex, r, g, b);
 
 	iSetColor(255, 255, 255);
-	iRectangle(x, y, barW, barH);
 	iText(x, y + barH + 4, (char*)"PROTECTOR");
 }
 
@@ -838,6 +833,8 @@ void drawScrollingWorldBackground()
 			iSetColor(25, 25, 40);
 			iFilledRectangle(tileScreenX, 0, tileW, WINDOW_H);
 		}
+
+		
 	}
 }
 
@@ -845,7 +842,7 @@ void drawGameplayScene()
 {
 	drawScrollingWorldBackground();
 
-	// Background NPCs - drawn behind all fighters
+	
 	drawBgNpcs(cameraX);
 
 	for (int i = 0; i < enemyCount; i++)
@@ -865,7 +862,6 @@ void drawGameplayScene()
 	sprintf(hud, "Day %d / %d", currentDay, TOTAL_DAYS);
 	iSetColor(255, 255, 255);
 	iText(20, WINDOW_H - 120, hud);
-
 	if (player.hasFireball)
 	{
 		char fbHud[64];
@@ -881,7 +877,7 @@ void drawGameplayScene()
 	char scoreHud[32];
 	sprintf(scoreHud, "Score: %d", score);
 	int scoreLen = (int)strlen(scoreHud);
-	double scoreX = WINDOW_W - 20 - scoreLen * 10.0;   // right-aligned, ~10px/char at this font
+	double scoreX = WINDOW_W - 20 - scoreLen * 10.0;
 	iSetColor(255, 220, 60);
 	iText(scoreX, WINDOW_H - 30, scoreHud);
 
@@ -955,20 +951,20 @@ void handleAudioSettingsClicks()
 
 void handleAboutMenuClicks()
 {
-	// Continuous auto-scroll downward
+	
 	creditScrollOffset += CREDIT_SCROLL_SPEED;
 
-	// Keyboard scroll controls (W / UP scrolls back up, S / DOWN scrolls down faster)
+	
 	if (isKeyPressed('w') || isKeyPressed('W') || isSpecialKeyPressed(GLUT_KEY_UP))
-		creditScrollOffset += 3.5;
-	if (isKeyPressed('s') || isKeyPressed('S') || isSpecialKeyPressed(GLUT_KEY_DOWN))
 		creditScrollOffset -= 3.5;
+	if (isKeyPressed('s') || isKeyPressed('S') || isSpecialKeyPressed(GLUT_KEY_DOWN))
+		creditScrollOffset += 3.5;
 
 	double totalSpan = CREDIT_IMAGE_COUNT * CREDIT_STRIDE;
 	creditScrollOffset = fmod(creditScrollOffset, totalSpan);
 	if (creditScrollOffset < 0) creditScrollOffset += totalSpan;
 
-	// ESC to return to main menu
+	
 	if (keyJustPressed(27))
 	{
 		appState = STATE_MAIN_MENU;
@@ -1025,8 +1021,7 @@ void handleNameEntryInput()
 	}
 }
 
-// Story slides auto-advance every STORY_SLIDE_TICKS ticks.
-// Click and key input are intentionally ignored during the story intro.
+
 void handleStoryIntro()
 {
 	storySlideTimer--;
@@ -1034,7 +1029,7 @@ void handleStoryIntro()
 	{
 		currentStorySlide++;
 		if (currentStorySlide >= STORY_SLIDE_COUNT)
-			beginDayTransition();   // story's over - start Day 1
+			beginDayTransition();   
 		else
 			storySlideTimer = STORY_SLIDE_TICKS;
 	}
@@ -1066,7 +1061,6 @@ void resolveProjectileHits()
 				{
 					comboCount = 0;
 					comboTimer = 0;
-					hitStopTimer = HIT_STOP_TICKS_HURT;
 				}
 				pr.hasHit = true;
 				if (pr.kind == PROJ_BOMB && !pr.exploding) startExplosion(pr);
@@ -1083,6 +1077,7 @@ void resolveProjectileHits()
 					applyDamageToEnemyWithShield(enemies[e], pr.damage, pr.facing);
 					pr.hasHit = true;
 					if (!pr.exploding) pr.active = false;
+					sfxAttack(settings.sfxVolume);
 					break;
 				}
 			}
@@ -1098,27 +1093,19 @@ void handleGameplay()
 		return;
 	}
 
-	if (hitStopTimer > 0)
-	{
-		hitStopTimer--;
-		return;   // freeze-frame: skip updates for a few ticks, keep rendering
-	}
-
 	if (comboTimer > 0)
 	{
 		comboTimer--;
 		if (comboTimer <= 0) comboCount = 0;
 	}
 
-	// Cache player hurt state BEFORE update to detect a new hit this tick
 	bool wasHurt = (player.state == HURT);
 
 	if (updatePlayer(player))
 		resolvePlayerAttack();
+	resolveFireballHits();
 
-	resolveFireballHits();   // the player's own thrown fireballs vs enemies
-
-	// Fire hit SFX on the first tick the player enters HURT state
+	
 	if (!wasHurt && player.state == HURT)
 		sfxHit(settings.sfxVolume);
 
@@ -1129,7 +1116,7 @@ void handleGameplay()
 		updateEnemyAbilities(enemies[i], player.x, enemies, enemyCount, MAX_ENEMIES, currentDay);
 	}
 
-	// Also detect hits from projectiles resolved below
+	
 	bool wasHurt2 = (player.state == HURT);
 	updateProjectiles();
 	resolveProjectileHits();
@@ -1150,7 +1137,7 @@ void handleGameplay()
 			else
 				applyPlayerDamageBoost(player, POWERUP_DAMAGE_BONUS, POWERUP_DAMAGE_DURATION_TICKS);
 
-			sfxPickup(settings.sfxVolume);   // power-up pickup sound
+			sfxPickup(settings.sfxVolume);   
 			powerUp.active = false;
 			powerUp.nextSpawnTimer = POWERUP_MIN_SPAWN_TICKS +
 				(rand() % (POWERUP_MAX_SPAWN_TICKS - POWERUP_MIN_SPAWN_TICKS + 1));

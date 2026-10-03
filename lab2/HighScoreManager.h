@@ -32,16 +32,13 @@ inline void saveHighScores(HighScoreList &list)
 }
 
 
-// Inserts (name, score) keeping the list sorted highest-score-first.
-// If the table is already full, the entry is only kept if it beats
-// the current lowest score - otherwise it's dropped.
 inline void addHighScore(HighScoreList &list, const char name[], int score)
 {
     int insertAt = list.count < MAX_HIGHSCORES ? list.count : -1;
 
     if (insertAt == -1)
     {
-        if (score <= list.scores[MAX_HIGHSCORES - 1]) return;  // doesn't qualify
+        if (score <= list.scores[MAX_HIGHSCORES - 1]) return;  
         insertAt = MAX_HIGHSCORES - 1;
     }
     else
@@ -61,6 +58,12 @@ inline void addHighScore(HighScoreList &list, const char name[], int score)
     list.names[insertAt][MAX_NAME_LEN - 1] = '\0';
 
     saveHighScores(list);
+}
+
+
+inline void addHighScore(HighScoreList &list, const char name[])
+{
+    addHighScore(list, name, 0);
 }
 
 #endif 

@@ -32,7 +32,7 @@ enum AppState
 #define GRAVITY    0.6
 
 
-#define WORLD_W (WINDOW_W * 3)   
+#define WORLD_W (WINDOW_W * 6)   
 
 #define BASE_UNIT_W 45.0
 #define BASE_UNIT_H 65.0
@@ -41,11 +41,11 @@ enum AppState
 #define TICKS_PER_SECOND 60
 
 #define ANIM_FRAME_DELAY 6   
-#define ANIM_IDLE_COUNT   2
-#define ANIM_WALK_COUNT   3
-#define ANIM_ATTACK_COUNT 3
+#define ANIM_IDLE_COUNT   4
+#define ANIM_WALK_COUNT   8
+#define ANIM_ATTACK_COUNT 5
 #define ANIM_HURT_COUNT   2
-#define ANIM_DEAD_COUNT   2
+#define ANIM_DEAD_COUNT   5
 
 #define HURT_DURATION 18  
 

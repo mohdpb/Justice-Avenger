@@ -3,6 +3,7 @@
 
 
 #include "GameCommon.h"
+#include "HealthBarUI.h"
 #include "Projectile.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -125,7 +126,7 @@ inline EnemyStats getEnemyStats(EnemyType type, int day)
 		break;
 
 	case ENEMY_FIRE:
-		s.scale = 2.5;
+		s.scale = 2.8;
 		s.maxHealth = (int)(70 * difficulty);
 		s.moveSpeed = 1.0;
 		s.attackCooldown = 110;
@@ -662,15 +663,10 @@ inline void drawEnemy(Enemy &e, double cameraX)
 		double bw = e.isBoss ? w * 0.9 : w * 0.6;
 		double bx = screenX - bw / 2;
 		double by = e.y + h + 6;
+		double bh = e.isBoss ? 8 : 6;
 		double pct = (double)e.health / (double)e.stats.maxHealth;
-		if (pct < 0) pct = 0;
 
-		iSetColor(40, 40, 40);
-		iFilledRectangle(bx, by, bw, 5);
-		iSetColor(200, 40, 40);
-		iFilledRectangle(bx, by, bw * pct, 5);
-		iSetColor(255, 255, 255);
-		iRectangle(bx, by, bw, 5);
+		drawHealthBar(bx, by, bw, bh, pct, g_enemyHpBgTex, g_enemyHpFillTex, 200, 40, 40);
 	}
 }
 
